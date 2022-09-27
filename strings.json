@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "applicationid": "ApplicationId",
+          "installationid": "InstallationId",
+          "javascriptkey": "JavaScriptKey"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot onnect",
+      "invalid_auth": "Invalid auth",
+      "unknown": "Unknown"
+    },
+    "abort": {
+      "already_configured": "Already configured device"
+    }
+  }
+}
