@@ -10,6 +10,7 @@ functions any way. It only works if you have a Pixie Plus Hub and doesn't suppor
 
 I am not a programmer, and my code is messy and inefficient. I only wrote this because I didn’t like the idea that I needed SmartThings as a mediator between HA and the lights.  
 
+Access the integration here: https://github.com/nirnachmani/Pixie-Plus-for-Home-Assistant
 
 Installation: 
 
