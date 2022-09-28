@@ -205,7 +205,7 @@ async def getdevices(session_data, ID_param):
         json_data = json.dumps(request.json())
         devices = json.loads(json_data)
 
-        _LOGGER.debug(devices)
+        #_LOGGER.debug(devices)
         devices_list = parse_devices(devices, session_data)
 
         return devices_list
@@ -485,7 +485,7 @@ async def pixie_websocket_connect(
                                     homeid,
                                     livegroup_objectid,
                                 )
-                                _LOGGER.debug(devices_list)
+                                #_LOGGER.debug(devices_list)
                                 coordinator.async_set_updated_data(devices_list)
                             except:
                                 _LOGGER.debug("unable to parse websocket input")
