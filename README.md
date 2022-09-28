@@ -6,9 +6,9 @@ First, a warning. Please only use this code if you know what you are doing. Inst
 This is a Pixie Plus integration for Home Assistant. Pixie Plus is a line of smart light products made by an Australian company called SAL. The
 integration only supports light switches' on and off functionality. There is no support for color or brightness settings (I don't have any lights with
 dimmers or colors). It also doesn't support built in groups, scenes, schedules or timers but I assume that you would use Home Assistant for those
-functions any way. It only works if you have a Pixie Plus Hub and doesn't support Bluetooth capabilities. It requires the cloud because of the way they implemented their system (no direct access to the local hub IP, only through their servers. 
+functions any way. It only works if you have a Pixie Plus Hub and doesn't support Bluetooth capabilities. It requires the cloud because of the way they implemented their system (no direct access to the local hub IP, only through their servers). 
 
-I am not a programmer, and my code is messy and inefficient. I only wrote this because I didn’t like the idea that I needed SmartThings as a mediator between HA and the lights.  
+I am not a programmer, and my code is messy and inefficient. I only wrote this because I didn’t like the idea that I needed SmartThings as a mediator between HA and the Pixie Plus lights.  
 
 Access the integration here: https://github.com/nirnachmani/Pixie-Plus-for-Home-Assistant
 
