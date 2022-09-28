@@ -22,4 +22,4 @@ To find all the numbers you will need to use a mitmproxy and a rooted virtual an
 
 Usage: 
 
-Once you provide all the needed credentials, the integration should work, and you should see new light entities. However, I can’t guarantee it will work. Feel free to use, modify and add to the code as needed. I may be able to answer occasional question (if I know the answer) but generally won’t have much time to spend on that. 
+Once you provide all the needed credentials, the integration should work, and you should see new light entities. However, I can’t guarantee it will work. Feel free to use, modify and add to the code as needed. I may be able to answer an occasional question (if I know the answer) but generally won’t have much time to spend on that. 
