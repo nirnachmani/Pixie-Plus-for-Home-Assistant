@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "data": {
-          "username": "Username",
+          "email": "Username/email",
           "password": "Password",
           "applicationid": "ApplicationId",
           "installationid": "InstallationId",
@@ -12,9 +12,9 @@
       }
     },
     "error": {
-      "cannot_connect": "Cannot onnect",
-      "invalid_auth": "Invalid auth",
-      "unknown": "Unknown"
+      "cannot_connect": "Cannot connect",
+      "invalid_auth": "Invalid authuorisation",
+      "unknown": "Unknown error"
     },
     "abort": {
       "already_configured": "Already configured device"

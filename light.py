@@ -11,16 +11,12 @@ import async_timeout
 
 from . import pixiepluslogin
 
-import voluptuous as vol
-
 import asyncio
 
-import homeassistant.helpers.config_validation as cv
 from homeassistant.components.light import ATTR_BRIGHTNESS, PLATFORM_SCHEMA, LightEntity
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.core import callback
-from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant import config_entries
@@ -31,29 +27,11 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.helpers import device_registry as dr
 
-
 from typing import Any
 
 from .const import DOMAIN
 
-# SCAN_INTERVAL = timedelta(seconds=5)
-
 _LOGGER = logging.getLogger(__name__)
-
-CONF_APPLICATIONID = "applicationid"
-CONF_INSTALLATIONID = "installationid"
-CONF_JAVASCRIPTKEY = "javascriptkey"
-
-# Validation of the user's configuration
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_APPLICATIONID): cv.string,
-        vol.Required(CONF_INSTALLATIONID): cv.string,
-        vol.Required(CONF_JAVASCRIPTKEY): cv.string,
-    }
-)
 
 
 async def async_setup_entry(
@@ -67,25 +45,11 @@ async def async_setup_entry(
     """Set up the Pixie Plus Light platform."""
     # Assigning configuration variables from HA config
     # The configuration check takes care they are present.
-    config = hass.data[DOMAIN][config_entry.entry_id]
-    username = config[CONF_USERNAME]
-    password = config.get(CONF_PASSWORD)
-    applicationid = config[CONF_APPLICATIONID]
-    installationid = config[CONF_INSTALLATIONID]
-    javascriptkey = config[CONF_JAVASCRIPTKEY]
-
-    # Setup connection with Pixie Plus
-    devices_list = await pixiepluslogin.pixie_login(
-        applicationid, installationid, javascriptkey, username, password
-    )
-
-    if devices_list == "":
-        _LOGGER.error("Could not connect to Pixie Plus")
-        return
 
     # passing the Pixie Plus devices list with data about all the lights - list of dictionaries, eacy dictionary is a light
-    my_api = devices_list
-    coordinator = MyCoordinator(hass, my_api)
+    devices_list = hass.data[DOMAIN][config_entry.entry_id]
+
+    coordinator = MyCoordinator(hass, devices_list)
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -97,9 +61,9 @@ async def async_setup_entry(
     # calling websocket connection to get push updates
     asyncio.create_task(
         pixiepluslogin.pixie_websocket_connect(
-            applicationid,
-            installationid,
-            javascriptkey,
+            devices_list[0]["applicationid"],
+            devices_list[0]["installationid"],
+            devices_list[0]["javascriptkey"],
             devices_list[0]["sessiontoken"],
             devices_list[0]["userid"],
             devices_list[0]["homeid"],
@@ -152,7 +116,10 @@ class MyCoordinator(DataUpdateCoordinator):
             "sessiontoken": self._sessiontoken,
         }
 
-        devices_list = await pixiepluslogin.getdevices(session_data, ID_param)
+        try:
+            devices_list = await pixiepluslogin.getdevices(session_data, ID_param)
+        except:
+            _LOGGER.warning("Could not process devices update")
 
         return devices_list
 

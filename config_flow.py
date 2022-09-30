@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("username"): str,
+        vol.Required("email"): str,
         vol.Required("password"): str,
         vol.Required("applicationid"): str,
         vol.Required("installationid"): str,
@@ -38,16 +38,23 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # If your PyPI package is not built with async, pass your methods
     # to the executor:
 
-    api_url_web_userquery = "https://www.pixie.app/p0/pixieCloud/functions/userQuery"
+    api_url = {
+        "userquery": "https://www.pixie.app/p0/pixieCloud/functions/userQuery",
+        "login": "https://www.pixie.app/p0/pixieCloud/login",
+    }
 
-    if not await hass.async_add_executor_job(
-        pixiepluslogin.check_user, api_url_web_userquery, data
+    if not await hass.async_add_executor_job(pixiepluslogin.check_user, api_url, data):
+        raise InvalidAuth
+
+    if (
+        await hass.async_add_executor_job(pixiepluslogin.login, api_url, data)
+        == "LoginError"
     ):
         raise InvalidAuth
 
     # Return info that you want to store in the config entry.
     return {
-        "username": data["username"],
+        "email": data["email"],
         "password": data["password"],
         "applicationid": data["applicationid"],
         "installationid": data["installationid"],

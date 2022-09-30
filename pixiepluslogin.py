@@ -34,9 +34,14 @@ async def pixie_login(applicationid, installationid, javascriptkey, email, passw
 
     # session data has session speicifc data: sessionToken, userId, homeId
     session_data = login(api_url, login_data)
-    session_data.update(login_data)
-    del session_data["email"]
-    del session_data["password"]
+    if session_data == "LoginError":
+        raise Exception("Unable to loigin, check credentials")
+    elif session_data == "ConnectionError":
+        raise ConnectionError("Unable to connect - check your internet")
+    else:
+        session_data.update(login_data)
+        del session_data["email"]
+        del session_data["password"]
 
     # json parameters often needed in commands to pixie plus
     ID_param = {
@@ -64,32 +69,33 @@ async def pixie_login(applicationid, installationid, javascriptkey, email, passw
 
 
 # check if user exist as part of config flow
-def check_user(api_url_web_userquery, data):
+def check_user(api_url, data):
 
     userquery = {
         "_ApplicationId": data["applicationid"],
         "_ClientVersion": "js1.9.2",
         "_InstallationId": data["installationid"],
         "_JavaScriptKey": data["javascriptkey"],
-        "email": data["username"],
+        "email": data["email"],
     }
 
-    request = httpx.post(api_url_web_userquery, json=userquery)
+    request = httpx.post(api_url["userquery"], json=userquery)
     userexist = json.loads(request.text)
 
-    if userexist["result"] == 1:
-        success = "True"
-    else:
-        success = "False"
-
-    return success
+    try:
+        if userexist["result"] == 1:
+            return True
+        else:
+            return False
+    except:
+        return False
 
 
 def login(api_url, login_data):
 
     login_command = {
         "_ApplicationId": login_data["applicationid"],
-        "_ClientVersion": login_data["clientversion"],
+        "_ClientVersion": "js1.9.2",
         "_InstallationId": login_data["installationid"],
         "_JavaScriptKey": login_data["javascriptkey"],
         "_method": "GET",
@@ -97,17 +103,22 @@ def login(api_url, login_data):
         "username": login_data["email"],
     }
 
-    request = httpx.post(api_url["login"], json=login_command)
-    json_data = json.dumps(request.json())
-    data = json.loads(json_data)
+    try:
+        request = httpx.post(api_url["login"], json=login_command)
+    except:
+        return "ConnectionError"
 
-    session_data = {
-        "userid": data["objectId"],
-        "homeid": data["curHome"]["objectId"],
-        "sessiontoken": data["sessionToken"],
-    }
-
-    return session_data
+    try:
+        json_data = json.dumps(request.json())
+        data = json.loads(json_data)
+        session_data = {
+            "userid": data["objectId"],
+            "homeid": data["curHome"]["objectId"],
+            "sessiontoken": data["sessionToken"],
+        }
+        return session_data
+    except:
+        return "LoginError"
 
 
 def register_home(api_url, session_data, ID_param):
@@ -205,7 +216,7 @@ async def getdevices(session_data, ID_param):
         json_data = json.dumps(request.json())
         devices = json.loads(json_data)
 
-        #_LOGGER.debug(devices)
+        # _LOGGER.debug(devices)
         devices_list = parse_devices(devices, session_data)
 
         return devices_list
@@ -485,7 +496,7 @@ async def pixie_websocket_connect(
                                     homeid,
                                     livegroup_objectid,
                                 )
-                                #_LOGGER.debug(devices_list)
+                                # _LOGGER.debug(devices_list)
                                 coordinator.async_set_updated_data(devices_list)
                             except:
                                 _LOGGER.debug("unable to parse websocket input")
