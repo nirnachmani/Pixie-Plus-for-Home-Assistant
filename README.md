@@ -54,7 +54,7 @@ pixie_plus:
         close: 8
         stop: 5
 ```
-The number assigned to the open / close / stop represent the location of the button in the cover control pannel in the Pixie Plus app as follow:
+The number assigned to the open / close / stop represents the location of the button in the cover control pannel in the Pixie Plus app as follow:
 ```
 1, 2, 3
 4, 5, 6
