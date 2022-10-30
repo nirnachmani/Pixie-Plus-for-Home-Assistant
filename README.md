@@ -1,6 +1,6 @@
 # Pixie Plus for Home Assistant 
 
-**First, a warning. Installation of this integration requires a bit of knowledge and is not straight forward - see for more details below. In addition, the 
+**First, a warning. Installation of this integration requires a bit of knowledge and is not straight forward - see belowfor more details. In addition, the 
 integration was only tested on my system and is not sure to work on other systems without modifications. It is not supported but I may be able to help.** 
 
 This is a Pixie Plus integration for Home Assistant. Pixie Plus is a line of smart light products and other smart home devices made by an Australian
