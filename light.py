@@ -1,7 +1,6 @@
 """Platform for Pixie Plus light integration."""
 from __future__ import annotations
 
-from datetime import timedelta
 
 import logging
 
@@ -13,8 +12,17 @@ from . import pixiepluslogin
 
 import asyncio
 
-from homeassistant.components.light import ATTR_BRIGHTNESS, PLATFORM_SCHEMA, LightEntity
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.components.light import (
+    ATTR_BRIGHTNESS,
+    ATTR_EFFECT,
+    ATTR_FLASH,
+    ATTR_TRANSITION,
+    ATTR_RGB_COLOR,
+    ATTR_WHITE,
+    ColorMode,
+    LightEntity,
+    LightEntityFeature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.core import callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -29,7 +37,18 @@ from homeassistant.helpers import device_registry as dr
 
 from typing import Any
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    hardware_list,
+    has_dimming,
+    has_color,
+    has_white,
+    supported_features,
+    effect_list,
+    is_light,
+    is_switch,
+    is_cover,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,81 +66,24 @@ async def async_setup_entry(
     # The configuration check takes care they are present.
 
     # passing the Pixie Plus devices list with data about all the lights - list of dictionaries, eacy dictionary is a light
-    devices_list = hass.data[DOMAIN][config_entry.entry_id]
 
-    coordinator = MyCoordinator(hass, devices_list)
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    await coordinator.async_config_entry_first_refresh()
+    # can the above be coordinator = config_entry.data
 
     # adding entities
     async_add_entities(
-        PixiePlusLight(coordinator, idx) for idx, ent in enumerate(coordinator.data)
-    )
-
-    # calling websocket connection to get push updates
-    asyncio.create_task(
-        pixiepluslogin.pixie_websocket_connect(
-            devices_list[0]["applicationid"],
-            devices_list[0]["installationid"],
-            devices_list[0]["javascriptkey"],
-            devices_list[0]["sessiontoken"],
-            devices_list[0]["userid"],
-            devices_list[0]["homeid"],
-            devices_list[0]["livegroup_objectid"],
-            coordinator,
-            hass,
+        PixiePlusLight(coordinator, idx)
+        for idx, ent in enumerate(coordinator.data)
+        if ((str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) in is_light)
+        or (
+            ((str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) not in is_light)
+            and (
+                str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2) not in is_switch
+            )
+            and (str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2) not in is_cover)
         )
     )
-
-
-class MyCoordinator(DataUpdateCoordinator):
-    """My custom coordinator."""
-
-    def __init__(self, hass, my_api):
-        """Initialize my coordinator."""
-        super().__init__(
-            hass,
-            _LOGGER,
-            # Name of the data. For logging purposes.
-            name="Pixie Plus",
-            # Polling interval. Will only be polled if there are subscribers.
-            update_interval=timedelta(seconds=15),
-        )
-        self.my_api = my_api
-        self._applicationid = self.my_api[0]["applicationid"]
-        self._installationid = self.my_api[0]["installationid"]
-        self._javascriptkey = self.my_api[0]["javascriptkey"]
-        self._sessiontoken = self.my_api[0]["sessiontoken"]
-        self._userid = self.my_api[0]["userid"]
-        self._homeid = self.my_api[0]["homeid"]
-        self.livegroup_objectid = self.my_api[0]["livegroup_objectid"]
-
-    async def _async_update_data(self):
-
-        ID_param = {
-            "_ApplicationId": self._applicationid,
-            "_ClientVersion": "js1.9.2",
-            "_InstallationId": self._installationid,
-            "_JavaScriptKey": self._javascriptkey,
-            "_SessionToken": self._sessiontoken,
-        }
-
-        session_data = {
-            "userid": self._userid,
-            "homeid": self._homeid,
-            "livegroup_objectid": self.livegroup_objectid,
-            "applicationid": self._applicationid,
-            "installationid": self._installationid,
-            "javascriptkey": self._javascriptkey,
-            "sessiontoken": self._sessiontoken,
-        }
-
-        try:
-            devices_list = await pixiepluslogin.getdevices(session_data, ID_param)
-        except:
-            _LOGGER.warning("Could not process devices update")
-
-        return devices_list
 
 
 class PixiePlusLight(CoordinatorEntity, LightEntity):
@@ -131,12 +93,14 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
 
         """Initialize a Pixie Plus Light."""
 
-        # self._light = light
         super().__init__(coordinator)
         self.idx = idx
         self._name = self.coordinator.data[self.idx]["name"]
         self._mac = self.coordinator.data[self.idx]["mac"]
         self._state = self.coordinator.data[self.idx]["state"]
+        self._type = self.coordinator.data[self.idx]["type"]
+        self._stype = self.coordinator.data[self.idx]["stype"]
+        self._br = self.coordinator.data[self.idx]["br"]
         self._applicationid = self.coordinator.data[self.idx]["applicationid"]
         self._installationid = self.coordinator.data[self.idx]["installationid"]
         self._javascriptkey = self.coordinator.data[self.idx]["javascriptkey"]
@@ -146,10 +110,48 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         self._sessiontoken = self.coordinator.data[self.idx]["sessiontoken"]
         self._attr_is_on = self.coordinator.data[self.idx]["state"]
         self._attr_unique_id = self.coordinator.data[self.idx]["mac"]
-        # self._attr_name = self._name
+        self._attr_has_entity_name = True
+        self._attr_name = None
+        self._model_no = str(self._type).zfill(2) + str(self._stype).zfill(2)
+        self._supported_color_modes: set[ColorMode | str] = set()
+        self._attr_effect_list = []
+        if (self._model_no in has_dimming) and (self._model_no not in has_color):
+            self._supported_color_modes.add(ColorMode.BRIGHTNESS)
+        if self._model_no in has_dimming:
+            self._brightness = round(
+                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
+            )
+        if self._model_no in has_color:
+            self._supported_color_modes.add(ColorMode.RGB)
+            self._rgb_color = ()
+        if self._model_no in has_white:
+            self._supported_color_modes.add(ColorMode.WHITE)
+            self._white = round(
+                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
+            )
+        if (self._model_no not in has_dimming) and (self._model_no not in has_color):
+            self._supported_color_modes.add(ColorMode.ONOFF)
+        if self._model_no in supported_features:
+            if "EFFECT" in supported_features[self._model_no]:
+                self._attr_supported_features |= LightEntityFeature.EFFECT
+            if "FLASH" in supported_features[self._model_no]:
+                self._attr_supported_features |= LightEntityFeature.FLASH
+            if "TRANSITION" in supported_features[self._model_no]:
+                self._attr_supported_features |= LightEntityFeature.TRANSITION
+        if self._model_no in effect_list:
+            self._attr_effect_list = effect_list[self._model_no]
 
     @property
     def device_info(self):
+
+        if self._model_no in hardware_list:
+            model = hardware_list[self._model_no]
+        else:
+            model = "Unknown model, assuming is light"
+            _LOGGER.warning(
+                f"adding unknown device, model no {self._model_no}, assuming is light with on/off functionality"
+            )
+
         return {
             "identifiers": {
                 # Serial numbers are unique identifiers within a specific domain
@@ -157,7 +159,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
             },
             "name": self._name,
             "manufacturer": "SAL - Pixie Plus",
-            "model": "SWL600BTAM",
+            "model": model,
             "via_device": (DOMAIN, "Pixie Plus Hub"),
         }
 
@@ -167,20 +169,52 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
 
         self._attr_is_on = self.coordinator.data[self.idx]["state"]
         self._state = self.coordinator.data[self.idx]["state"]
+        if self._model_no in has_dimming:
+            self._brightness = round(
+                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
+            )
+
+        if self._model_no in has_white:
+            self._white = round(
+                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
+            )
         self.async_write_ha_state()
 
+    '''
     @property
     def name(self) -> str:
         """Return the display name of this light."""
         return self._name
+    '''
 
-    # @property
-    # def brightness(self):
-    #    """Return the brightness of the light.
-    #   This method is optional. Removing it indicates to Home Assistant
-    #    that brightness is not supported for this light.
-    #    """
-    #    return self._brightness
+    @property
+    def brightness(self) -> int | None:
+        if self._model_no in has_dimming:
+            return round((int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255)
+        else:
+            return None
+
+    @property
+    def color_mode(self) -> ColorMode:
+        """Return the color mode of the light."""
+        if (self._model_no in has_dimming) and (self._model_no not in has_color):
+            return ColorMode.BRIGHTNESS
+        elif self._model_no in has_color:
+            return ColorMode.RGB
+        else:
+            return ColorMode.ONOFF
+
+    @property
+    def supported_color_modes(self) -> set | None:
+        """Flag supported features."""
+        return self._supported_color_modes
+
+    @property
+    def rgb_color(self) -> tuple[int, int, int] | None:
+        if self._model_no in has_color:
+            return self._rgb_color
+        else:
+            return None
 
     @property
     def is_on(self) -> bool | None:
@@ -190,12 +224,48 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         # Instructs the light to turn on.
 
-        # self._light.brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
+        other = {}
+        if (self._model_no in has_dimming) and (self._model_no not in has_color):
+            self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
+        if self._model_no in has_color:
+            brightness = kwargs.get(ATTR_BRIGHTNESS)
+            if brightness:
+                self._brightness = brightness
+            if (not self._brightness) or (self._brightness == 0):
+                self._brightness = 255
+            rgb_color = kwargs.get(ATTR_RGB_COLOR)
+            if rgb_color:
+                self._rgb_color = rgb_color
+            other.update({"rgb_color": self._rgb_color})
+            if self._model_no in supported_features:
+                if "EFFECT" in supported_features[self._model_no]:
+                    effect = kwargs.get(ATTR_EFFECT)
+                    other.update({"effect": effect})
+                if "FLASH" in supported_features[self._model_no]:
+                    flash = kwargs.get(ATTR_FLASH)
+                    other.update({"flash": flash})
+                if "TRANSITION" in supported_features[self._model_no]:
+                    transition = kwargs.get(ATTR_TRANSITION)
+                    other.update({"transition": transition})
+            if self._model_no in has_white:
+                white = kwargs.get(ATTR_WHITE)
+                other.update({"white": white})
+        else:
+            other = {}
 
-        await pixiepluslogin.change_light(self, "on")
+        if self._model_no in has_dimming:
+            brightness_hex = hex(self._brightness)[2:].zfill(2)
+        else:
+            brightness_hex = "on"
+
+        await pixiepluslogin.change_light(self, brightness_hex, other)
 
         # assumes success - will get a push update after few second and will adjust according to the real state
         self.coordinator.data[self.idx]["state"] = "True"
+        if self._model_no in has_dimming:
+            self.coordinator.data[self.idx]["br_cur"] = float(
+                (self._brightness / 255) * 100
+            )
         self.coordinator.async_set_updated_data(self.coordinator.data)
 
         # await self.coordinator.async_request_refresh()
@@ -203,7 +273,9 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
 
-        await pixiepluslogin.change_light(self, "off")
+        other = {}
+
+        await pixiepluslogin.change_light(self, "00", other)
 
         self.coordinator.data[self.idx]["state"] = ""
         self.coordinator.async_set_updated_data(self.coordinator.data)
