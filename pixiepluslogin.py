@@ -759,7 +759,8 @@ async def pixie_websocket_connect(
                                 # )
                                 # print("processed device list")
                                 # print(devices_list)
-                                coordinator.async_set_updated_data(devices_list)
+                                if devices_list:
+                                    coordinator.async_set_updated_data(devices_list)
                             except:
                                 _LOGGER.error("unable to parse large websocket input")
                                 _LOGGER.info(ws_update)
@@ -773,7 +774,8 @@ async def pixie_websocket_connect(
                                 #    "devices_list after parsing by small ws update: %s",
                                 #    devices_list,
                                 # )
-                                coordinator.async_set_updated_data(devices_list)
+                                if devices_list:
+                                    coordinator.async_set_updated_data(devices_list)
                             except ValueError as toolong:
                                 _LOGGER.debug(toolong)
                             except RuntimeError as no_data:
@@ -813,7 +815,8 @@ def parse_ws_data(
     state = ""
 
     if not devices["object"]["onlineList"]:
-        return _LOGGER.info(f"No onlineList in websocket update, skipping")
+        _LOGGER.info(f"No onlineList in websocket update, skipping")
+        return
 
     numberofdevices = len(devices["object"]["deviceList"])
     # _LOGGER.info("number of devices is: %s", numberofdevices)
