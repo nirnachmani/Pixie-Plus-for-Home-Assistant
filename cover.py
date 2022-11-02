@@ -63,18 +63,26 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
     config = hass.data[DOMAIN]
 
+    cover_exists = 0
+    for ent in coordinator.data:
+        if (str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) in is_cover:
+            cover_exists = 1
+
     # adding entities
-    if "cover" in config:  # checking that user added cover config in configuration.yaml
-        cover_config = config["cover"]
-        async_add_entities(
-            PixiePlusCover(coordinator, idx, cover_config)
-            for idx, ent in enumerate(coordinator.data)
-            if (str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) in is_cover
-        )
-    else:
-        _LOGGER.error(
-            "Unable to add cover entities because they are not defined in configuration.yaml - please see documentation"
-        )
+    if cover_exists == 1:
+        if (
+            "cover" in config
+        ):  # checking that user added cover config in configuration.yaml
+            cover_config = config["cover"]
+            async_add_entities(
+                PixiePlusCover(coordinator, idx, cover_config)
+                for idx, ent in enumerate(coordinator.data)
+                if (str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) in is_cover
+            )
+        else:
+            _LOGGER.error(
+                "Unable to add cover entities because they are not defined in configuration.yaml - please see documentation"
+            )
 
 
 class PixiePlusCover(CoordinatorEntity, CoverEntity):
