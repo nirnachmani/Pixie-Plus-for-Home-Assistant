@@ -60,6 +60,7 @@ The number assigned to the open / close / stop represents the location of the bu
 4, 5, 6
 7, 8, 9
 ```
+Note that if you moved a button in the app to a new location you need to use the original location and not the new one. 
 
 Known issues:
 - The Smart plug - ESS105/BT has a USB port that can be controlled by the app and the integration. However, I wasn't able to find in the 
