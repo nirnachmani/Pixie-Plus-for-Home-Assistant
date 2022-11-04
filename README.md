@@ -47,14 +47,14 @@ It seems that those parameters are quite stable. I have been using the same ones
 
 Usage: 
 
-Once you provide all the needed credentials, the integration should work, and you should see all your devices. However, a further step is needed for the   
+Once you provide all the needed credentials, the integration should work, and you should see all your devices. However, a further step is needed for the 
 cover platform to support the Blind & Signal Control device. You need to setup the cover device in configuration.yaml, for example:
 
 ```
 pixie_plus:
   cover:
-    blind_sc_171: # name of the covers as in the Pixie Plus app but lower case and underscores (_) instead of spaces
-        open: 2 # the number representS the location of the order of the button in the cover control pannel in the Pixie Plus app
+    blind_sc_171: # name of the cover as in the Pixie Plus app but lower case and underscores (_) instead of spaces
+        open: 2 # the number represents the location of the order of the button in the cover control pannel in the Pixie Plus app
         close: 8
         stop: 5
 ```
