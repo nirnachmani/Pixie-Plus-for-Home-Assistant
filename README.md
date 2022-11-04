@@ -68,9 +68,9 @@ Note that if you moved a button in the app to a new location you need to use the
 
 Known issues:
 - The Smart plug - ESS105/BT has a USB port that can be controlled by the app and the integration. However, I wasn't able to find in the 
-current state of the USB (on or off) published by the Pixie Plus hub. However, there is an update if the state changes. As such, I can't determine the 
-initial state of the USB when loading the integration. After rebooting AH the USB state will restore the previous state but if the USB state changed when
-HA was down, it won't be recorded.
+current state of the USB (on or off) published by the Pixie Plus hub when publishing the states of all other devices. However, there is a one off websocket 
+update if the state changes. As such, I can't determine the initial state of the USB when loading the integration. After rebooting AH the USB state will 
+restore the previous state but if the USB state changed when HA was down, it won't be recorded.
 
 I can’t guarantee the integration will work on your setup. Feel free to use, modify and add to the code as needed. I may be able to answer an occasional 
 question (if I know the answer) but generally won’t have much time to spend on that. 
