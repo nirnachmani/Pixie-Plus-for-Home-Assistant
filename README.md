@@ -54,7 +54,7 @@ cover platform to support the Blind & Signal Control device. You need to setup t
 pixie_plus:
   cover:
     blind_sc_171: # name of the covers as in the Pixie Plus app but lower case and underscores (_) instead of spaces
-        open: 2 # the number represent the location of the order of the button in the cover control pannel in the Pixie Plus app
+        open: 2 # the number representS the location of the order of the button in the cover control pannel in the Pixie Plus app
         close: 8
         stop: 5
 ```
