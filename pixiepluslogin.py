@@ -452,8 +452,7 @@ async def change_light(data, state, other):
     #    light_command_number = "00"
 
     light_command_number = "00"
-    l = len(data._mac)
-    mac_id = data._mac[l - 2 :]
+    mac_id = hex(data._id)[2:].zfill(2)
     model_no = str(data._type).zfill(2) + str(data._stype).zfill(2)
 
     if (state == "on") or (state == "00"):  # for on/off command
@@ -909,11 +908,13 @@ def parse_ws_data(
 
             has_usb = True
 
-            mac_id = devices["object"]["deviceList"][i]["mac"][15:]
+            for (
+                device
+            ) in (
+                coordinator.data
+            ):  # usb state is not provided in the update so looking for existing state
 
-            for device in coordinator.data:
-
-                if (mac_id == device["mac"][15:]) and (device["has_usb"]):
+                if (dev_id == device["id"]) and (device["has_usb"]):
                     state = device["state"]
                     # _LOGGER.info("state from coordinator data is: %s", state)
 
@@ -998,7 +999,7 @@ def parse_single_ws_update(coordinator, ws_update):
     for device in devices_list:
 
         # _LOGGER.info(device["mac"][15:])
-        if (mac_id == device["mac"][15:]) and (device["has_usb"]):
+        if (mac_id == hex(device["id"])[2:].zfill(2)) and (device["has_usb"]):
             # _LOGGER.info(device["has_usb"])
 
             if (new_state_data == "0f") or (new_state_data == "0e"):
@@ -1024,8 +1025,7 @@ def initiate_cover(data):
     }
 
     light_command_number = "00"
-    l = len(data._mac)
-    mac_id = data._mac[l - 2 :]
+    mac_id = hex(data._id)[2:].zfill(2)
     cover_command_list = []
     cover_response = []
 

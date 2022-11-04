@@ -97,6 +97,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         self.idx = idx
         self._name = self.coordinator.data[self.idx]["name"]
         self._mac = self.coordinator.data[self.idx]["mac"]
+        self._id = self.coordinator.data[self.idx]["id"]
         self._state = self.coordinator.data[self.idx]["state"]
         self._type = self.coordinator.data[self.idx]["type"]
         self._stype = self.coordinator.data[self.idx]["stype"]
