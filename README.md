@@ -19,8 +19,9 @@ sent me a box with different hardware which I was able to implement in the integ
 
 For compatible devices, it supports dimming, colours and effects. The integration doesn't support built in Pixie Plus groups, scenes, schedules or timers 
 because I assume that you would use Home Assistant for those functions anyway. It only works if you have a Pixie Plus Hub and doesn't support Bluetooth
-capabilities. All the devices need first to be setup in the Pixie Plus app to work. The integration requires the cloud because of the way they implemented 
-their system (no direct access to the local hub IP, only through their servers). 
+capabilities. All the devices need first to be setup in the Pixie Plus app to work. The integration requires the cloud. To clarify, while Pixie Plus can 
+work localy, without internet connection, I am not able to impliment local support becuase I am unable to decode the TCP messages between the app and the 
+hub (if someone from Pixie Plus is willing to help me decode the local TCP communication, I may be able to impliment local support). 
 
 I am not a programmer, and my code is messy and inefficient. I only wrote this because I didn’t like that I needed SmartThings as a mediator between HA and 
 the Pixie Plus lights.  
@@ -40,8 +41,10 @@ There are two ways to find those parameters:
 (not user) certificate. [This link](https://docs.mitmproxy.org/stable/howto-install-system-trusted-ca-android/) is very helpful. Then install the Pixie 
 Plus app on the virtual phone, log in to tha app and set the proxy on the virtual phone to the mitmproxy. Once all this is done you will
 be able to see the communication between the Pixie Plus app and the server and locate the needed parameters. 
-2. Use Proxyman on an iPhone. You will need to create a new account and login with it to the Pixie Plus app when you retrieve those parameters so new ones 
-are created, otherwise you won't be able to use both AH and the app.
+2. For iPhone you can use Proxyman. You will need to create a new account and login with it to the Pixie Plus app when you retrieve those parameters so new 
+ones are created, otherwise you won't be able to use both AH and the app. It may be possible to use a packet sniffer on Android (i.e. Packet Capture) as 
+well, but I am not sure if this will work on a non-rooted device because of the need to install a CA certificate. You will need to use a new account
+if you get the parameters that way.
 
 It seems that those parameters are quite stable. I have been using the same ones for about 2 months now. So hopfeully this only needs to be done once. 
 
