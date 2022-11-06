@@ -126,7 +126,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         if self._model_no in has_color:
             self._supported_color_modes.add(ColorMode.RGB)
             self._rgb_color = ()
-            self._last_rgb_color = ()
         if self._model_no in has_white:
             self._supported_color_modes.add(ColorMode.WHITE)
             self._white = round(
@@ -241,8 +240,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color:
                 self._rgb_color = rgb_color
-            elif self._last_rgb_color:
-                self._rgb_color = self._last_rgb_color
             other.update({"rgb_color": self._rgb_color})
             if self._model_no in supported_features:
                 if "EFFECT" in supported_features[self._model_no]:
@@ -283,8 +280,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         other = {}
         if self._model_no in has_dimming:
             self._last_brightness = self._brightness
-        if self._model_no in has_color:
-            self._last_rgb_color = self._rgb_color
 
         await pixiepluslogin.change_light(self, "00", other)
 
