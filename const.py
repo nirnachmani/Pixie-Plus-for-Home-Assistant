@@ -13,10 +13,12 @@ hardware_list = {
     "0208": "Smart Socket Outlet - SP023/BTAM",
     "1002": "Dual Relay Control - PC206DR/R/BTAM",
     "1102": "Blind & Signal Control - PC206BS/R/BTAM",
+    "2212": "Smart Switch G2 - SWL350BT",
+    "2312": "Smart Dimmer G2 - SDD350BT",
 }
 
-is_light = ["2213", "2313", "2702", "2402", "2403"]
-has_dimming = ["2313", "2702", "2402", "2403"]
+is_light = ["2213", "2313", "2702", "2402", "2403", "2212", "2312"]
+has_dimming = ["2313", "2702", "2402", "2403", "2312"]
 has_color = ["2702"]
 has_white = []
 is_switch = ["0107", "0208", "1002"]

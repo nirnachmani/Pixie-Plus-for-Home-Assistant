@@ -116,7 +116,7 @@ class PixiePlusSwitch(CoordinatorEntity, SwitchEntity, RestoreEntity):
                 self.coordinator.data[self.idx]["state"] = new_state
                 self.coordinator.async_set_updated_data(self.coordinator.data)
             else:
-                _LOGGER.info(f"Unknown last state")
+                _LOGGER.info(f"Unknown last USB state")
 
     @property
     def device_info(self):

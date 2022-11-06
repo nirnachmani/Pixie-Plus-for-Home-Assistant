@@ -122,9 +122,11 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
             self._brightness = round(
                 (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
             )
+            self._last_brightness = ""
         if self._model_no in has_color:
             self._supported_color_modes.add(ColorMode.RGB)
             self._rgb_color = ()
+            self._last_rgb_color = ()
         if self._model_no in has_white:
             self._supported_color_modes.add(ColorMode.WHITE)
             self._white = round(
@@ -226,17 +228,21 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         # Instructs the light to turn on.
 
         other = {}
-        if (self._model_no in has_dimming) and (self._model_no not in has_color):
-            self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-        if self._model_no in has_color:
+        if self._model_no in has_dimming:
             brightness = kwargs.get(ATTR_BRIGHTNESS)
             if brightness:
                 self._brightness = brightness
             if (not self._brightness) or (self._brightness == 0):
-                self._brightness = 255
+                if self._last_brightness:
+                    self._brightness = self._last_brightness
+                else:
+                    self._brightness = 255
+        if self._model_no in has_color:
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color:
                 self._rgb_color = rgb_color
+            elif self._last_rgb_color:
+                self._rgb_color = self._last_rgb_color
             other.update({"rgb_color": self._rgb_color})
             if self._model_no in supported_features:
                 if "EFFECT" in supported_features[self._model_no]:
@@ -275,6 +281,10 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         """Instruct the light to turn off."""
 
         other = {}
+        if self._model_no in has_dimming:
+            self._last_brightness = self._brightness
+        if self._model_no in has_color:
+            self._last_rgb_color = self._rgb_color
 
         await pixiepluslogin.change_light(self, "00", other)
 
