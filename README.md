@@ -19,9 +19,11 @@ sent me a box with different hardware which I was able to implement in the integ
 
 For compatible devices, it supports dimming, colours and effects. The integration doesn't support built in Pixie Plus groups, scenes, schedules or timers 
 because I assume that you would use Home Assistant for those functions anyway. It only works if you have a Pixie Plus Hub and doesn't support Bluetooth
-capabilities. All the devices need first to be setup in the Pixie Plus app to work. The integration requires the cloud. To clarify, while Pixie Plus can 
-work localy, without internet connection, I am not able to impliment local support becuase I am unable to decode the TCP messages between the app and the 
-hub (if someone from Pixie Plus is willing to help me decode the local TCP communication, I may be able to impliment local support). 
+capabilities. All the devices need first to be setup in the Pixie Plus app to work. 
+
+The integration requires the cloud. To clarify, while Pixie Plus can 
+work locally, without internet connection, I am not able to implement local support because I am unable to decode the TCP messages between the app and the 
+hub (if someone from Pixie Plus is willing to help me decode the local TCP communication, I may be able to implement local support). 
 
 I am not a programmer, and my code is messy and inefficient. I only wrote this because I didn’t like that I needed SmartThings as a mediator between HA and 
 the Pixie Plus lights.  
