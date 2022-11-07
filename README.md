@@ -9,6 +9,8 @@ sent me a box with different hardware which I was able to implement in the integ
     
 - Smart Switch G3 - SWL600BTAM
 - Smart dimmer G3 - SDD300BTAM
+- Smart Switch G2 - SWL350BT
+- Smart Dimmer G2 - SDD350BT
 - Smart plug - ESS105/BT
 - Flexi smart LED strip - FLP12V2M/RGBBT
 - Flexi Streamline - FLP24V2M
