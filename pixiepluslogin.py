@@ -302,7 +302,9 @@ def parse_devices(devices, session_data):
                 continue
 
         if model_no in has_dimming:
-            br_cur = (int(devices["results"][0]["onlineList"][str(dev_id)]["br"]) / 100) * 255
+            br_cur = (
+                int(devices["results"][0]["onlineList"][str(dev_id)]["br"]) / 100
+            ) * 255
         else:
             br_cur = ""
 
@@ -452,7 +454,7 @@ async def change_light(data, state, other):
     #    light_command_number = "00"
 
     light_command_number = "00"
-    mac_id = (f'{data._id:x}').zfill(2)
+    mac_id = f"{data._id:02x}"
     model_no = str(data._type).zfill(2) + str(data._stype).zfill(2)
 
     if (state == "on") or (state == "00"):  # for on/off command
@@ -848,7 +850,9 @@ def parse_ws_data(
         # _LOGGER.info("new state is: %s", state)
 
         if model_no in has_dimming:
-            br_cur = (int(devices["object"]["onlineList"][str(dev_id)]["br"]) / 100) * 255
+            br_cur = (
+                int(devices["results"][0]["onlineList"][str(dev_id)]["br"]) / 100
+            ) * 255
         else:
             br_cur = ""
 

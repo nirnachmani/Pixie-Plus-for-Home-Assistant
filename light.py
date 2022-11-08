@@ -124,7 +124,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
             self._supported_color_modes.add(ColorMode.RGB)
             self._rgb_color = ()
         if self._model_no in has_white:
-            self._supported_color_modes.add(ColorMode.WHITE)
             self._white = self.coordinator.data[self.idx]["br_cur"]
         if (self._model_no not in has_dimming) and (self._model_no not in has_color):
             self._supported_color_modes.add(ColorMode.ONOFF)
@@ -218,14 +217,9 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         # Instructs the light to turn on.
 
         other = {}
-        if (self._model_no in has_dimming) and (self._model_no not in has_color):
+        if self._model_no in has_dimming:
             self._brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
         if self._model_no in has_color:
-            brightness = kwargs.get(ATTR_BRIGHTNESS)
-            if brightness:
-                self._brightness = brightness
-            if (not self._brightness) or (self._brightness == 0):
-                self._brightness = 255
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color:
                 self._rgb_color = rgb_color
@@ -247,7 +241,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
             other = {}
 
         if self._model_no in has_dimming and self._brightness > 0:
-            brightness_hex = (f'{int(self._brightness):x}').zfill(2)
+            brightness_hex = f"{int(self._brightness):02x}"
         else:
             brightness_hex = "on"
 
