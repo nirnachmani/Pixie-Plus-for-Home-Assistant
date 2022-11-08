@@ -119,18 +119,13 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         if (self._model_no in has_dimming) and (self._model_no not in has_color):
             self._supported_color_modes.add(ColorMode.BRIGHTNESS)
         if self._model_no in has_dimming:
-            self._brightness = round(
-                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
-            )
-            self._last_brightness = ""
+            self._brightness = self.coordinator.data[self.idx]["br_cur"]
         if self._model_no in has_color:
             self._supported_color_modes.add(ColorMode.RGB)
             self._rgb_color = ()
         if self._model_no in has_white:
             self._supported_color_modes.add(ColorMode.WHITE)
-            self._white = round(
-                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
-            )
+            self._white = self.coordinator.data[self.idx]["br_cur"]
         if (self._model_no not in has_dimming) and (self._model_no not in has_color):
             self._supported_color_modes.add(ColorMode.ONOFF)
         if self._model_no in supported_features:
@@ -172,14 +167,10 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         self._attr_is_on = self.coordinator.data[self.idx]["state"]
         self._state = self.coordinator.data[self.idx]["state"]
         if self._model_no in has_dimming:
-            self._brightness = round(
-                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
-            )
+            self._brightness = self.coordinator.data[self.idx]["br_cur"]
 
         if self._model_no in has_white:
-            self._white = round(
-                (int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255
-            )
+            self._white = self.coordinator.data[self.idx]["br_cur"]
         self.async_write_ha_state()
 
     '''
@@ -192,7 +183,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
     @property
     def brightness(self) -> int | None:
         if self._model_no in has_dimming:
-            return round((int(self.coordinator.data[self.idx]["br_cur"]) / 100) * 255)
+            return self.coordinator.data[self.idx]["br_cur"]
         else:
             return None
 
@@ -227,16 +218,14 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         # Instructs the light to turn on.
 
         other = {}
-        if self._model_no in has_dimming:
+        if (self._model_no in has_dimming) and (self._model_no not in has_color):
+            self._brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
+        if self._model_no in has_color:
             brightness = kwargs.get(ATTR_BRIGHTNESS)
             if brightness:
                 self._brightness = brightness
             if (not self._brightness) or (self._brightness == 0):
-                if self._last_brightness:
-                    self._brightness = self._last_brightness
-                else:
-                    self._brightness = 255
-        if self._model_no in has_color:
+                self._brightness = 255
             rgb_color = kwargs.get(ATTR_RGB_COLOR)
             if rgb_color:
                 self._rgb_color = rgb_color
@@ -257,8 +246,8 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         else:
             other = {}
 
-        if self._model_no in has_dimming:
-            brightness_hex = hex(self._brightness)[2:].zfill(2)
+        if self._model_no in has_dimming and self._brightness > 0:
+            brightness_hex = (f'{int(self._brightness):x}').zfill(2)
         else:
             brightness_hex = "on"
 
@@ -267,9 +256,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         # assumes success - will get a push update after few second and will adjust according to the real state
         self.coordinator.data[self.idx]["state"] = "True"
         if self._model_no in has_dimming:
-            self.coordinator.data[self.idx]["br_cur"] = float(
-                (self._brightness / 255) * 100
-            )
+            self.coordinator.data[self.idx]["br_cur"] = self._brightness
         self.coordinator.async_set_updated_data(self.coordinator.data)
 
         # await self.coordinator.async_request_refresh()
@@ -278,8 +265,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         """Instruct the light to turn off."""
 
         other = {}
-        if self._model_no in has_dimming:
-            self._last_brightness = self._brightness
 
         await pixiepluslogin.change_light(self, "00", other)
 
