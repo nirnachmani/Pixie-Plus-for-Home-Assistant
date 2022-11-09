@@ -741,30 +741,30 @@ async def pixie_websocket_connect(
                 if "op" in ws_update:
                     if ws_update["op"] == "update":
                         if "deviceList" in ws_update["object"]:
-                            # try:
-                            # _LOGGER.info(ws_update)
-                            devices_list = parse_ws_data(
-                                ws_update,
-                                coordinator,
-                                applicationid,
-                                installationid,
-                                javascriptkey,
-                                sessiontoken,
-                                userid,
-                                homeid,
-                                livegroup_objectid,
-                            )
-                            # _LOGGER.info(
-                            #    "devices_list after parsing by main ws update: %s",
-                            #    devices_list,
-                            # )
-                            # print("processed device list")
-                            # print(devices_list)
-                            if devices_list:
-                                coordinator.async_set_updated_data(devices_list)
-                        # except:
-                        #    _LOGGER.error("unable to parse large websocket input")
-                        #    _LOGGER.info(ws_update)
+                            try:
+                                # _LOGGER.info(ws_update)
+                                devices_list = parse_ws_data(
+                                    ws_update,
+                                    coordinator,
+                                    applicationid,
+                                    installationid,
+                                    javascriptkey,
+                                    sessiontoken,
+                                    userid,
+                                    homeid,
+                                    livegroup_objectid,
+                                )
+                                # _LOGGER.info(
+                                #    "devices_list after parsing by main ws update: %s",
+                                #    devices_list,
+                                # )
+                                # print("processed device list")
+                                # print(devices_list)
+                                if devices_list:
+                                    coordinator.async_set_updated_data(devices_list)
+                            except:
+                                _LOGGER.error("unable to parse large websocket input")
+                                _LOGGER.info(ws_update)
                         if ws_update["requestId"] == 1:
                             try:
                                 # _LOGGER.info(ws_update)
