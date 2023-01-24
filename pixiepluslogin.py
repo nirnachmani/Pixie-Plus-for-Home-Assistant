@@ -340,7 +340,6 @@ def parse_devices(devices, session_data):
             {
                 "name": device_name,
                 "id": devices["results"][0]["deviceList"][i]["id"],
-                "br": devices["results"][0]["deviceList"][i]["state"]["br"],
                 "br_cur": br_cur,
                 "mac": devices["results"][0]["deviceList"][i]["mac"],
                 "state": state,
@@ -369,7 +368,6 @@ def parse_devices(devices, session_data):
                 {
                     "name": device_name,
                     "id": devices["results"][0]["deviceList"][i]["id"],
-                    "br": devices["results"][0]["deviceList"][i]["state"]["br"],
                     "br_cur": br_cur,
                     "mac": devices["results"][0]["deviceList"][i]["mac"],
                     "state": state,
@@ -402,7 +400,6 @@ def parse_devices(devices, session_data):
                 {
                     "name": device_name,
                     "id": devices["results"][0]["deviceList"][i]["id"],
-                    "br": devices["results"][0]["deviceList"][i]["state"]["br"],
                     "br_cur": br_cur,
                     "mac": devices["results"][0]["deviceList"][i]["mac"],
                     "state": state,
@@ -888,7 +885,6 @@ def parse_ws_data(
             {
                 "name": device_name,
                 "id": devices["object"]["deviceList"][i]["id"],
-                "br": devices["object"]["deviceList"][i]["state"]["br"],
                 "br_cur": br_cur,
                 "mac": devices["object"]["deviceList"][i]["mac"],
                 "state": state,
@@ -926,7 +922,6 @@ def parse_ws_data(
                 {
                     "name": device_name,
                     "id": devices["object"]["deviceList"][i]["id"],
-                    "br": devices["object"]["deviceList"][i]["state"]["br"],
                     "br_cur": br_cur,
                     "mac": devices["object"]["deviceList"][i]["mac"],
                     "state": state,
@@ -959,7 +954,6 @@ def parse_ws_data(
                 {
                     "name": device_name,
                     "id": devices["object"]["deviceList"][i]["id"],
-                    "br": devices["object"]["deviceList"][i]["state"]["br"],
                     "br_cur": br_cur,
                     "mac": devices["object"]["deviceList"][i]["mac"],
                     "state": state,

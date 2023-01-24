@@ -101,7 +101,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         self._state = self.coordinator.data[self.idx]["state"]
         self._type = self.coordinator.data[self.idx]["type"]
         self._stype = self.coordinator.data[self.idx]["stype"]
-        self._br = self.coordinator.data[self.idx]["br"]
         self._applicationid = self.coordinator.data[self.idx]["applicationid"]
         self._installationid = self.coordinator.data[self.idx]["installationid"]
         self._javascriptkey = self.coordinator.data[self.idx]["javascriptkey"]
