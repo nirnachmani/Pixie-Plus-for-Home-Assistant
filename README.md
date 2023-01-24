@@ -46,7 +46,7 @@ There are two ways to find those parameters:
 Plus app on the virtual phone, log in to tha app and set the proxy on the virtual phone to the mitmproxy. Once all this is done you will
 be able to see the communication between the Pixie Plus app and the server and locate the needed parameters. 
 2. For iPhone you can use Proxyman. You will need to create a new account and login with it to the Pixie Plus app when you retrieve those parameters so new 
-ones are created, otherwise you won't be able to use both AH and the app. It may be possible to use a packet sniffer on Android (i.e. Packet Capture) as 
+ones are created, otherwise you won't be able to use both HA and the app. It may be possible to use a packet sniffer on Android (i.e. Packet Capture) as 
 well, but I am not sure if this will work on a non-rooted device because of the need to install a CA certificate. You will need to use a new account
 if you get the parameters that way.
 
