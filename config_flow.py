@@ -25,7 +25,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required("password"): str,
         vol.Required("applicationid"): str,
         vol.Required("installationid"): str,
-        vol.Required("javascriptkey"): str,
+        vol.Required("clientkey"): str,
     }
 )
 
@@ -38,16 +38,11 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # If your PyPI package is not built with async, pass your methods
     # to the executor:
 
-    api_url = {
-        "userquery": "https://www.pixie.app/p0/pixieCloud/functions/userQuery",
-        "login": "https://www.pixie.app/p0/pixieCloud/login",
-    }
-
-    if not await hass.async_add_executor_job(pixiepluslogin.check_user, api_url, data):
+    if not await hass.async_add_executor_job(pixiepluslogin.check_user, data):
         raise InvalidAuth
 
     if (
-        await hass.async_add_executor_job(pixiepluslogin.login, api_url, data)
+        await hass.async_add_executor_job(pixiepluslogin.login, data)
         == "LoginError"
     ):
         raise InvalidAuth
@@ -58,7 +53,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         "password": data["password"],
         "applicationid": data["applicationid"],
         "installationid": data["installationid"],
-        "javascriptkey": data["javascriptkey"],
+        "clientkey": data["clientkey"],
     }
 
 
@@ -80,7 +75,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         try:
-            info = await validate_input(self.hass, user_input)
+            await validate_input(self.hass, user_input)
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except InvalidAuth:

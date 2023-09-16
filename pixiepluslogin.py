@@ -18,170 +18,122 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+api_url = {
+    "userquery": "https://www.pixie.app/p0/pixieCloud/functions/userQuery",
+    "login": "https://www.pixie.app/p0/pixieCloud/login",
+    "home": "https://www.pixie.app/p0/pixieCloud/classes/Home",
+    "HP": "https://www.pixie.app/p0/pixieCloud/classes/HP",
+    "livegroup": "https://www.pixie.app/p0/pixieCloud/classes/LiveGroup",
+    "logout": "https://www.pixie.app/p0/pixieCloud/logout",
+}
 
-async def pixie_login(applicationid, installationid, javascriptkey, email, password):
+
+async def pixie_login(config):
 
     # pixie plus hub is controlled from the cloud by accessing the foloowing url's
-    api_url = {
-        "userquery": "https://www.pixie.app/p0/pixieCloud/functions/userQuery",
-        "login": "https://www.pixie.app/p0/pixieCloud/login",
-        "home": "https://www.pixie.app/p0/pixieCloud/classes/Home",
-        "HP": "https://www.pixie.app/p0/pixieCloud/classes/HP",
-        "livegroup": "https://www.pixie.app/p0/pixieCloud/classes/LiveGroup",
-        "logout": "https://www.pixie.app/p0/pixieCloud/logout",
-    }
-
     # data required for login
     login_data = {
-        "applicationid": applicationid,
-        "installationid": installationid,
-        "javascriptkey": javascriptkey,
-        "clientversion": "js1.9.2",
-        "email": email,
-        "password": password,
+        "applicationid": config["applicationid"],
+        "installationid": config["installationid"],
+        "clientkey": config["clientkey"],
+        "email": config["email"],
+        "password": config["password"],
     }
 
     # session data has session speicifc data: sessionToken, userId, homeId
-    session_data = login(api_url, login_data)
-    if session_data == "LoginError":
-        raise Exception("Unable to loigin, check credentials")
-    elif session_data == "ConnectionError":
-        raise ConnectionError("Unable to connect - check your internet")
-    else:
-        session_data.update(login_data)
-        del session_data["email"]
-        del session_data["password"]
+    session_data = login(login_data)
 
-    # json parameters often needed in commands to pixie plus
-    ID_param = {
-        "_ApplicationId": login_data["applicationid"],
-        "_ClientVersion": login_data["clientversion"],
-        "_InstallationId": login_data["installationid"],
-        "_JavaScriptKey": login_data["javascriptkey"],
-        "_SessionToken": session_data["sessiontoken"],
-    }
-
-    # the function of this is not clear but done by pixie plus client; return HP_key and HP_objectId are not required for this scope of operation
-    register_home(api_url, session_data, ID_param)
-
-    # required for getting livegroup_object id and bridge name which are needed for commands
-    live_group_data = livegroup_get_objectID(api_url, session_data, ID_param)
+    live_group_data = livegroup_get_objectID(config, session_data)
     session_data.update(live_group_data)
 
     # function not clear, first post, no new data
-    post_GwData(api_url, session_data, ID_param)
+    # post_GwData(api_url, session_data, ID_param)
+    #
+    # livegroup_get_last_request(session_data, ID_param)
+    #
+    devices_list = await getdevices(config, session_data)
 
-    livegroup_get_last_request(session_data, ID_param)
-
-    devices_list = await getdevices(session_data, ID_param)
-
-    if devices_list != "":
-        return devices_list
+    return (devices_list, session_data)
 
 
 # check if user exist as part of config flow
-def check_user(api_url, data):
-
-    userquery = {
-        "_ApplicationId": data["applicationid"],
-        "_ClientVersion": "js1.9.2",
-        "_InstallationId": data["installationid"],
-        "_JavaScriptKey": data["javascriptkey"],
+def check_user(data):
+    _LOGGER.info(f'checking user exists')
+    body = {
         "email": data["email"],
     }
+    headers = {
+        "x-parse-application-id": data["applicationid"],
+        "x-parse-installation-id": data["installationid"],
+        "x-parse-client-key": data["clientkey"],
+        "x-parse-revocable-session": "1"
+    }
+    req = httpx.post(api_url["userquery"], json=body, headers=headers)
+    res = req.json()
 
-    request = httpx.post(api_url["userquery"], json=userquery)
-    userexist = json.loads(request.text)
+    _LOGGER.info('result', res)
 
-    try:
-        if userexist["result"] == 1:
-            return True
-        else:
-            return False
-    except:
+    if "result" in res:
+        return res["result"] == 1
+    else:
+        print(res)
         return False
 
 
-def login(api_url, login_data):
+def login(data):
+    _LOGGER.info(f'logging in')
+    body = {
+        "username": data["email"],
+        "password": data["password"]
+    }
+    headers = {
+        "x-parse-application-id": data["applicationid"],
+        "x-parse-installation-id": data["installationid"],
+        "x-parse-client-key": data["clientkey"],
+        "x-parse-revocable-session": "1"
+    }
+    req = httpx.post(api_url["login"], json=body, headers=headers)
+    res = req.json()
 
-    login_command = {
-        "_ApplicationId": login_data["applicationid"],
-        "_ClientVersion": "js1.9.2",
-        "_InstallationId": login_data["installationid"],
-        "_JavaScriptKey": login_data["javascriptkey"],
-        "_method": "GET",
-        "password": login_data["password"],
-        "username": login_data["email"],
+    _LOGGER.info('result', res)
+
+    data = {
+        "userid": res["objectId"],
+        "homeid": res["curHome"]["objectId"],
+        "sessiontoken": res["sessionToken"],
+        "raw": res
     }
 
-    try:
-        request = httpx.post(api_url["login"], json=login_command)
-    except:
-        return "ConnectionError"
-
-    try:
-        json_data = json.dumps(request.json())
-        data = json.loads(json_data)
-        session_data = {
-            "userid": data["objectId"],
-            "homeid": data["curHome"]["objectId"],
-            "sessiontoken": data["sessionToken"],
-        }
-        return session_data
-    except:
-        return "LoginError"
+    return data
 
 
-def register_home(api_url, session_data, ID_param):
-
-    # building the command
-    curHome = {
-        "__type": "Pointer",
-        "className": "Home",
-        "objectId": session_data["homeid"],
-    }
-    registerhome = {"_method": "PUT", "curHome": curHome}
-    registerhome.update(ID_param)
-
-    HP_where = {"homeId": session_data["homeid"], "userId": session_data["userid"]}
-    HP = {"_method": "GET", "limit": "1", "where": HP_where}
-    HP.update(ID_param)
-
-    api_url_web_user = (
-        "https://www.pixie.app/p0/pixieCloud/classes/_User/" + session_data["userid"]
-    )
-
-    request = httpx.post(api_url_web_user, json=registerhome)
-    # json_data = json.dumps(request.json())
-    # TODO check for success
-
-    request = httpx.post(api_url["HP"], json=HP)
-    # json_data = json.dumps(request.json())
-    # HP_data = json.loads(json_data)
-    # HP_objectId = HP_data["results"][0]["objectId"]
-    # HP_key = HP_data["results"][0]["key"]
-    # TODO check for success
-    # HP_key and HP_objectId are not required for operation
-
-    return
-
-
-def livegroup_get_objectID(api_url, session_data, ID_param):
-
-    livegroup_get_where = {"GroupID": session_data["homeid"]}
-    livegroup_get = {"_method": "GET", "where": livegroup_get_where}
-    livegroup_get.update(ID_param)
-
-    request = httpx.post(api_url["livegroup"], json=livegroup_get)
-    json_data = json.dumps(request.json())
-    data = json.loads(json_data)
-
-    live_group_data = {
-        "livegroup_objectid": data["results"][0]["objectId"],
-        "bridge_name": data["results"][0]["Online"][0],
+def livegroup_get_objectID(config, session_data):
+    body = {
+        "where": json.dumps({
+            "GroupID": {
+                "$regex": session_data["homeid"] + '$',
+                "$options": "i"
+            }
+        }),
+        "limit": 2
     }
 
-    return live_group_data
+    headers = {
+        "x-parse-session-token": session_data["sessiontoken"],
+        "x-parse-application-id": config["applicationid"],
+        "x-parse-client-key": config["clientkey"]
+    }
+
+    req = httpx.get(api_url["livegroup"], params=body, headers=headers)
+    res = req.json()
+
+    data = {
+        "livegroup_objectid": res["results"][0]["objectId"],
+        "bridge_name": res["results"][0]["Online"][0],
+        "raw": res
+    }
+
+    return data
 
 
 def post_GwData(api_url, session_data, ID_param):
@@ -241,29 +193,27 @@ def unix_time():
     return int(datetime.datetime.timestamp(datetime.datetime.now()) * 1000)
 
 
-async def getdevices(session_data, ID_param):
+async def getdevices(config, session_data):
+    body = {
+        "where": {},
+        "skip": 0,
+        "limit": 20
+    }
 
-    url = "https://www.pixie.app/p0/pixieCloud/classes/Home"
+    headers = {
+        "x-parse-session-token": session_data["sessiontoken"],
+        "x-parse-application-id": config["applicationid"],
+        "x-parse-client-key": config["clientkey"]
+    }
 
-    gethome = {"_method": "GET", "where": "{}"}
-    gethome.update(ID_param)
+    req = httpx.get(api_url["home"], params=body, headers=headers)
+    res = req.json()
 
-    request = httpx.post(url, json=gethome)
-
-    try:
-        json_data = json.dumps(request.json())
-        devices = json.loads(json_data)
-        # print(devices)
-        # _LOGGER.debug(devices)
-        devices_list = parse_devices(devices, session_data)
-        # _LOGGER.info(devices_list)
-        return devices_list
-
-    except:
-        _LOGGER.warning("Couldn't get devices")
+    return parse_devices(res, config, session_data)
 
 
-def parse_devices(devices, session_data):
+
+def parse_devices(devices, config, session_data):
 
     numberofdevices = 0
     devices_list = list()
@@ -284,6 +234,8 @@ def parse_devices(devices, session_data):
         model_no = str(devices["results"][0]["deviceList"][i]["type"]).zfill(2) + str(
             devices["results"][0]["deviceList"][i]["stype"]
         ).zfill(2)
+
+        _LOGGER.debug('model_no %s', model_no)
 
         if model_no == "0102":
             continue  # skips the gateway for now, doesn't add it to devices_list
@@ -345,9 +297,9 @@ def parse_devices(devices, session_data):
                 "state": state,
                 "type": devices["results"][0]["deviceList"][i]["type"],
                 "stype": devices["results"][0]["deviceList"][i]["stype"],
-                "applicationid": session_data["applicationid"],
-                "installationid": session_data["installationid"],
-                "javascriptkey": session_data["javascriptkey"],
+                "applicationid": config["applicationid"],
+                "installationid": config["installationid"],
+                "javascriptkey": config["clientkey"],
                 "userid": session_data["userid"],
                 "homeid": session_data["homeid"],
                 "livegroup_objectid": session_data["livegroup_objectid"],
@@ -373,9 +325,9 @@ def parse_devices(devices, session_data):
                     "state": state,
                     "type": devices["results"][0]["deviceList"][i]["type"],
                     "stype": devices["results"][0]["deviceList"][i]["stype"],
-                    "applicationid": session_data["applicationid"],
-                    "installationid": session_data["installationid"],
-                    "javascriptkey": session_data["javascriptkey"],
+                    "applicationid": config["applicationid"],
+                    "installationid": config["installationid"],
+                    "javascriptkey": config["clientkey"],
                     "userid": session_data["userid"],
                     "homeid": session_data["homeid"],
                     "livegroup_objectid": session_data["livegroup_objectid"],
@@ -405,9 +357,9 @@ def parse_devices(devices, session_data):
                     "state": state,
                     "type": devices["results"][0]["deviceList"][i]["type"],
                     "stype": devices["results"][0]["deviceList"][i]["stype"],
-                    "applicationid": session_data["applicationid"],
-                    "installationid": session_data["installationid"],
-                    "javascriptkey": session_data["javascriptkey"],
+                    "applicationid": config["applicationid"],
+                    "installationid": config["installationid"],
+                    "javascriptkey": config["clientkey"],
                     "userid": session_data["userid"],
                     "homeid": session_data["homeid"],
                     "livegroup_objectid": session_data["livegroup_objectid"],
@@ -423,33 +375,6 @@ def parse_devices(devices, session_data):
 
 
 async def change_light(data, state, other):
-
-    ID_param = {
-        "_ApplicationId": data._applicationid,
-        "_ClientVersion": "js1.9.2",
-        "_InstallationId": data._installationid,
-        "_JavaScriptKey": data._javascriptkey,
-        "_SessionToken": data._sessiontoken,
-    }
-
-    # livegroup_last_request = livegroup_get_last_request(HomeID, ID_param)
-    # if livegroup_last_request[1] == "bleData":
-    #    last_light_command_number = livegroup_last_request[0][
-    #        :2
-    #    ]  # [:2] takes first two digits
-    #    if last_light_command_number == "9f":
-    #        light_command_number = "00"
-    #    else:
-    #        light_command_number = last_light_command_number
-    #        light_command_number = int(
-    #            light_command_number, 16
-    #        )  # int(x, 16) turns to hex
-    #        light_command_number = hex(light_command_number + 1)[2:].zfill(
-    #            2
-    #        )  # [2:] removes first two digis, zfill add zero if one digit
-    # else:
-    #    light_command_number = "00"
-
     light_command_number = "00"
     mac_id = f"{data._id:02x}"
     model_no = str(data._type).zfill(2) + str(data._stype).zfill(2)
@@ -460,6 +385,7 @@ async def change_light(data, state, other):
 
             if data._has_usb:  # for USB
 
+                state_command = "00"
                 if state == "on":
                     state_command = "0c"
                 elif state == "00":
@@ -479,6 +405,7 @@ async def change_light(data, state, other):
                 if (
                     model_no in has_two_entities
                 ):  # for models with left and right sockets
+                    state_command = "00"
                     if data._side == "left":
                         if state == "on":
                             state_command = "11"
@@ -500,6 +427,7 @@ async def change_light(data, state, other):
                     )
 
                 else:  # for single switch
+                    state_command = "00"
                     if state == "on":
                         state_command = "03"
                     elif state == "00":
@@ -516,6 +444,7 @@ async def change_light(data, state, other):
 
         else:  # for light
 
+            state_command = "00"
             if state == "on":
                 state_command = 1
             elif state == "00":
@@ -567,6 +496,7 @@ async def change_light(data, state, other):
 
             if other["effect"]:
                 effect = other["effect"]
+                effect_command = "00"
                 if effect == "flash":
                     effect_command = "01"
                 elif effect == "strobe":
@@ -601,15 +531,27 @@ async def change_light(data, state, other):
         "time": unix_time(),
         "to": "ALL",
     }
-    bleData = {"Cmd": 2, "Request": bleData_request, "_method": "PUT"}
-    bleData.update(ID_param)
+    bleData = { "Cmd": 2, "Request": bleData_request }
+    # bleData.update(ID_param)
 
     api_url_web_livegroup_instance = (
         "https://www.pixie.app/p0/pixieCloud/classes/LiveGroup/"
         + data._livegroup_objectid
     )
 
-    request = httpx.post(api_url_web_livegroup_instance, json=bleData)
+    config = data.coordinator.config
+    session_data = data.coordinator.session_data
+
+    headers = {
+        "x-parse-session-token": session_data["sessiontoken"],
+        "x-parse-application-id": config["applicationid"],
+        "x-parse-client-key": config["clientkey"]
+    }
+
+    request = httpx.put(api_url_web_livegroup_instance, json=bleData, headers=headers)
+    _LOGGER.debug(bleData)
+    _LOGGER.debug(request.url)
+    _LOGGER.debug(request.text)
 
     # json_data = json.dumps(request.json())
     # ble_success = json.loads(json_data)
