@@ -1,4 +1,4 @@
-# Pixie Plus for Home Assistant 
+# Pixie Plus for Home Assistant - works with gateway firmware version 1.312.6519
 
 **First, a warning. Installation of this integration requires a bit of knowledge and is not straight forward - see below for more details. In addition, the 
 integration was only tested on my system and is not sure to work on other systems without modifications. It is not supported but I may be able to help.** 
