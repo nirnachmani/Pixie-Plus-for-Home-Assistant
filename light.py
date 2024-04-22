@@ -144,7 +144,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         else:
             model = "Unknown model, assuming is light"
             _LOGGER.warning(
-                f"adding unknown device, model no {self._model_no}, assuming is light with on/off functionality"
+                f"adding unknown device '{self._name}', model no {self._model_no}, assuming is light with on/off functionality"
             )
 
         return {

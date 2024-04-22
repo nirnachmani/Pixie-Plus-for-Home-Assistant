@@ -74,22 +74,10 @@ async def async_setup_entry(
     """Set up pixie_plus from a config entry."""
 
     config = config_entry.data
-    username = config["email"]
-    password = config.get(CONF_PASSWORD)
-    applicationid = config["applicationid"]
-    installationid = config["installationid"]
-    javascriptkey = config["javascriptkey"]
 
-    try:
-        devices_list = await pixiepluslogin.pixie_login(
-            applicationid, installationid, javascriptkey, username, password
-        )
-    except ConnectionError:
-        raise ConfigEntryNotReady(f"Timed out while connecting to Pixie Plus")
-    except Exception:
-        raise ConfigEntryAuthFailed(f"Credentials expired for Pixie Plus")
+    (devices_list, session_data) = await pixiepluslogin.pixie_login(config)
 
-    coordinator = MyCoordinator(hass, devices_list)
+    coordinator = MyCoordinator(hass, config, session_data, devices_list)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})
@@ -138,7 +126,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 class MyCoordinator(DataUpdateCoordinator):
     """My custom coordinator."""
 
-    def __init__(self, hass, my_api):
+    def __init__(self, hass, config, session_data, devices_list):
         """Initialize my coordinator."""
         super().__init__(
             hass,
@@ -148,42 +136,14 @@ class MyCoordinator(DataUpdateCoordinator):
             # Polling interval. Will only be polled if there are subscribers.
             # update_interval=timedelta(seconds=30),
         )
-        self.my_api = my_api
-        self._applicationid = self.my_api[0]["applicationid"]
-        self._installationid = self.my_api[0]["installationid"]
-        self._javascriptkey = self.my_api[0]["javascriptkey"]
-        self._sessiontoken = self.my_api[0]["sessiontoken"]
-        self._userid = self.my_api[0]["userid"]
-        self._homeid = self.my_api[0]["homeid"]
-        self.livegroup_objectid = self.my_api[0]["livegroup_objectid"]
+        self.config = config
+        self.session_data = session_data
+        self.devices_list = devices_list
         self.platforms = []
 
     async def _async_update_data(self):
-
-        ID_param = {
-            "_ApplicationId": self._applicationid,
-            "_ClientVersion": "js1.9.2",
-            "_InstallationId": self._installationid,
-            "_JavaScriptKey": self._javascriptkey,
-            "_SessionToken": self._sessiontoken,
-        }
-
-        session_data = {
-            "userid": self._userid,
-            "homeid": self._homeid,
-            "livegroup_objectid": self.livegroup_objectid,
-            "applicationid": self._applicationid,
-            "installationid": self._installationid,
-            "javascriptkey": self._javascriptkey,
-            "sessiontoken": self._sessiontoken,
-        }
-
-        try:
-            devices_list = await pixiepluslogin.getdevices(session_data, ID_param)
-        except:
-            _LOGGER.warning("Could not process devices update")
-
-        return devices_list
+        self.devices_list = await pixiepluslogin.getdevices(self.config, self.session_data)
+        return self.devices_list
 
 
 async def async_unload_entry(
