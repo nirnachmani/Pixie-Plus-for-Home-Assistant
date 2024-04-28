@@ -1,7 +1,6 @@
 {
   "domain": "pixie_plus",
   "name": "Pixie Plus",
-  "version": "0.01",
   "config_flow": true,
   "documentation": "",
   "requirements": ["websockets"],
@@ -12,5 +11,6 @@
   "codeowners": [
     "@nirnachmani"
   ],
-  "iot_class": "cloud_push"
+  "iot_class": "cloud_push",
+  "version": "0.2"
 }

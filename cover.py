@@ -1,4 +1,5 @@
 """Platform for Pixie Plus switch integration."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -53,7 +54,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-
     """Set up the Pixie Plus switch platform."""
     # Assigning configuration variables from HA config
     # The configuration check takes care they are present.
@@ -89,7 +89,6 @@ class PixiePlusCover(CoordinatorEntity, CoverEntity):
     """Representation of a Pixie Plus Cover."""
 
     def __init__(self, coordinator, idx, cover_config):
-
         """Initialize a Pixie Plus Cover."""
 
         super().__init__(coordinator)
@@ -98,9 +97,10 @@ class PixiePlusCover(CoordinatorEntity, CoverEntity):
         self._id = self.coordinator.data[self.idx]["id"]
         self._type = self.coordinator.data[self.idx]["type"]
         self._stype = self.coordinator.data[self.idx]["stype"]
+        self._email = self.coordinator.data[self.idx]["email"]
         self._applicationid = self.coordinator.data[self.idx]["applicationid"]
         self._installationid = self.coordinator.data[self.idx]["installationid"]
-        self._javascriptkey = self.coordinator.data[self.idx]["javascriptkey"]
+        self._clientkey = self.coordinator.data[self.idx]["clientkey"]
         self._userid = self.coordinator.data[self.idx]["userid"]
         self._homeid = self.coordinator.data[self.idx]["homeid"]
         self._livegroup_objectid = self.coordinator.data[self.idx]["livegroup_objectid"]
@@ -147,7 +147,6 @@ class PixiePlusCover(CoordinatorEntity, CoverEntity):
 
     @property
     def device_info(self):
-
         name = self.coordinator.data[self.idx]["name"]
 
         return {

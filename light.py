@@ -1,4 +1,5 @@
 """Platform for Pixie Plus light integration."""
+
 from __future__ import annotations
 
 
@@ -60,7 +61,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-
     """Set up the Pixie Plus Light platform."""
     # Assigning configuration variables from HA config
     # The configuration check takes care they are present.
@@ -90,7 +90,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
     """Representation of a Pixie Plus Light."""
 
     def __init__(self, coordinator, idx):
-
         """Initialize a Pixie Plus Light."""
 
         super().__init__(coordinator)
@@ -103,7 +102,7 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
         self._stype = self.coordinator.data[self.idx]["stype"]
         self._applicationid = self.coordinator.data[self.idx]["applicationid"]
         self._installationid = self.coordinator.data[self.idx]["installationid"]
-        self._javascriptkey = self.coordinator.data[self.idx]["javascriptkey"]
+        self._clientkey = self.coordinator.data[self.idx]["clientkey"]
         self._userid = self.coordinator.data[self.idx]["userid"]
         self._homeid = self.coordinator.data[self.idx]["homeid"]
         self._livegroup_objectid = self.coordinator.data[self.idx]["livegroup_objectid"]
@@ -138,7 +137,6 @@ class PixiePlusLight(CoordinatorEntity, LightEntity):
 
     @property
     def device_info(self):
-
         if self._model_no in hardware_list:
             model = hardware_list[self._model_no]
         else:

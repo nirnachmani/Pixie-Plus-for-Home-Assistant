@@ -7,7 +7,7 @@
           "password": "Password",
           "applicationid": "ApplicationId",
           "installationid": "InstallationId",
-          "javascriptkey": "JavaScriptKey"
+          "clientkey": "clientkey"
         }
       }
     },

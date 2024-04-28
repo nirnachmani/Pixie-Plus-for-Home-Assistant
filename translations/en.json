@@ -1,23 +1,23 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "data": {
-          "email": "Username/email",
-          "password": "Password",
-          "applicationid": "ApplicationId",
-          "installationid": "InstallationId",
-          "javascriptkey": "JavaScriptKey"
+    "config": {
+        "abort": {
+            "already_configured": "Already configured device"
+        },
+        "error": {
+            "cannot_connect": "Cannot connect",
+            "invalid_auth": "Invalid authuorisation",
+            "unknown": "Unknown error"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "applicationid": "ApplicationId",
+                    "clientkey": "clientkey",
+                    "email": "Username/email",
+                    "installationid": "InstallationId",
+                    "password": "Password"
+                }
+            }
         }
-      }
-    },
-    "error": {
-      "cannot_connect": "Cannot connect",
-      "invalid_auth": "Invalid authuorisation",
-      "unknown": "Unknown error"
-    },
-    "abort": {
-      "already_configured": "Already configured device"
     }
-  }
 }

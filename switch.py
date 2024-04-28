@@ -1,4 +1,5 @@
 """Platform for Pixie Plus switch integration."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -42,7 +43,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-
     """Set up the Pixie Plus switch platform."""
     # Assigning configuration variables from HA config
     # The configuration check takes care they are present.
@@ -64,7 +64,6 @@ class PixiePlusSwitch(CoordinatorEntity, SwitchEntity, RestoreEntity):
     """Representation of a Pixie Plus Light."""
 
     def __init__(self, coordinator, idx):
-
         """Initialize a Pixie Plus Light."""
 
         super().__init__(coordinator)
@@ -75,7 +74,7 @@ class PixiePlusSwitch(CoordinatorEntity, SwitchEntity, RestoreEntity):
         self._stype = self.coordinator.data[self.idx]["stype"]
         self._applicationid = self.coordinator.data[self.idx]["applicationid"]
         self._installationid = self.coordinator.data[self.idx]["installationid"]
-        self._javascriptkey = self.coordinator.data[self.idx]["javascriptkey"]
+        self._clientkey = self.coordinator.data[self.idx]["clientkey"]
         self._userid = self.coordinator.data[self.idx]["userid"]
         self._homeid = self.coordinator.data[self.idx]["homeid"]
         self._livegroup_objectid = self.coordinator.data[self.idx]["livegroup_objectid"]
@@ -120,7 +119,6 @@ class PixiePlusSwitch(CoordinatorEntity, SwitchEntity, RestoreEntity):
 
     @property
     def device_info(self):
-
         if self._model_no in has_two_entities:
             name = self._master_device_name
         else:

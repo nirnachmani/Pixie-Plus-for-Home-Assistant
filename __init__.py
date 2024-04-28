@@ -1,33 +1,31 @@
 """The pixie_plus integration."""
+
 from __future__ import annotations
+
+import asyncio
+
+# from datetime import timedelta
+import logging
+
+import voluptuous as vol
 
 # from homeassistant.config_entries import ConfigEntry
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+# from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 # from homeassistant.components.light import PLATFORM_SCHEMA
 import homeassistant.helpers.config_validation as cv
-from homeassistant.exceptions import (
-    ConfigEntryAuthFailed,
-    ConfigEntryNotReady,
-)
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
     UpdateFailed,
 )
 
-from homeassistant.helpers.typing import ConfigType
-
-import asyncio
-from datetime import timedelta
-
-from .const import DOMAIN
-import logging
-import voluptuous as vol
-
 from . import pixiepluslogin
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,7 +84,7 @@ async def async_setup_entry(
     for platform in PLATFORMS:
         if config_entry.options.get(platform, True):
             coordinator.platforms.append(platform)
-            hass.async_add_job(
+            hass.async_create_task(
                 hass.config_entries.async_forward_entry_setup(config_entry, platform)
             )
 
@@ -94,17 +92,7 @@ async def async_setup_entry(
 
     # calling websocket connection to get push updates
     asyncio.create_task(
-        pixiepluslogin.pixie_websocket_connect(
-            devices_list[0]["applicationid"],
-            devices_list[0]["installationid"],
-            devices_list[0]["javascriptkey"],
-            devices_list[0]["sessiontoken"],
-            devices_list[0]["userid"],
-            devices_list[0]["homeid"],
-            devices_list[0]["livegroup_objectid"],
-            coordinator,
-            hass,
-        )
+        pixiepluslogin.pixie_websocket_connect(config, session_data, coordinator)
     )
 
     return True
@@ -142,7 +130,9 @@ class MyCoordinator(DataUpdateCoordinator):
         self.platforms = []
 
     async def _async_update_data(self):
-        self.devices_list = await pixiepluslogin.getdevices(self.config, self.session_data)
+        self.devices_list = await pixiepluslogin.getdevices(
+            self.config, self.session_data
+        )
         return self.devices_list
 
 

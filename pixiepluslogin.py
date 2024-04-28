@@ -1,20 +1,20 @@
-import json
-import httpx
-import websockets
-import datetime
-import logging
 import asyncio
+import datetime
+import json
+import logging
 import time
 
-from .const import (
-    has_dimming,
-    has_color,
-    is_switch,
-    has_two_entities,
-    dev_has_usb,
-    is_cover,
-)
+import httpx
+import websockets
 
+from .const import (
+    dev_has_usb,
+    has_color,
+    has_dimming,
+    has_two_entities,
+    is_cover,
+    is_switch,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,6 @@ api_url = {
 
 
 async def pixie_login(config):
-
     # pixie plus hub is controlled from the cloud by accessing the foloowing url's
     # data required for login
     login_data = {
@@ -46,11 +45,6 @@ async def pixie_login(config):
     live_group_data = livegroup_get_objectID(config, session_data)
     session_data.update(live_group_data)
 
-    # function not clear, first post, no new data
-    # post_GwData(api_url, session_data, ID_param)
-    #
-    # livegroup_get_last_request(session_data, ID_param)
-    #
     devices_list = await getdevices(config, session_data)
 
     return (devices_list, session_data)
@@ -58,7 +52,7 @@ async def pixie_login(config):
 
 # check if user exist as part of config flow
 def check_user(data):
-    _LOGGER.info(f'checking user exists')
+    _LOGGER.info(f"checking user exists")
     body = {
         "email": data["email"],
     }
@@ -66,12 +60,12 @@ def check_user(data):
         "x-parse-application-id": data["applicationid"],
         "x-parse-installation-id": data["installationid"],
         "x-parse-client-key": data["clientkey"],
-        "x-parse-revocable-session": "1"
+        "x-parse-revocable-session": "1",
     }
     req = httpx.post(api_url["userquery"], json=body, headers=headers)
     res = req.json()
 
-    _LOGGER.info('result', res)
+    _LOGGER.info("result", res)
 
     if "result" in res:
         return res["result"] == 1
@@ -81,27 +75,24 @@ def check_user(data):
 
 
 def login(data):
-    _LOGGER.info(f'logging in')
-    body = {
-        "username": data["email"],
-        "password": data["password"]
-    }
+    _LOGGER.info(f"logging in")
+    body = {"username": data["email"], "password": data["password"]}
     headers = {
         "x-parse-application-id": data["applicationid"],
         "x-parse-installation-id": data["installationid"],
         "x-parse-client-key": data["clientkey"],
-        "x-parse-revocable-session": "1"
+        "x-parse-revocable-session": "1",
     }
     req = httpx.post(api_url["login"], json=body, headers=headers)
     res = req.json()
 
-    _LOGGER.info('result', res)
+    _LOGGER.info("result", res)
 
     data = {
         "userid": res["objectId"],
         "homeid": res["curHome"]["objectId"],
         "sessiontoken": res["sessionToken"],
-        "raw": res
+        "raw": res,
     }
 
     return data
@@ -109,19 +100,16 @@ def login(data):
 
 def livegroup_get_objectID(config, session_data):
     body = {
-        "where": json.dumps({
-            "GroupID": {
-                "$regex": session_data["homeid"] + '$',
-                "$options": "i"
-            }
-        }),
-        "limit": 2
+        "where": json.dumps(
+            {"GroupID": {"$regex": session_data["homeid"] + "$", "$options": "i"}}
+        ),
+        "limit": 2,
     }
 
     headers = {
         "x-parse-session-token": session_data["sessiontoken"],
         "x-parse-application-id": config["applicationid"],
-        "x-parse-client-key": config["clientkey"]
+        "x-parse-client-key": config["clientkey"],
     }
 
     req = httpx.get(api_url["livegroup"], params=body, headers=headers)
@@ -130,80 +118,23 @@ def livegroup_get_objectID(config, session_data):
     data = {
         "livegroup_objectid": res["results"][0]["objectId"],
         "bridge_name": res["results"][0]["Online"][0],
-        "raw": res
+        "raw": res,
     }
 
     return data
 
 
-def post_GwData(api_url, session_data, ID_param):
-
-    api_url_web_livegroup_instance = (
-        api_url["livegroup"] + "/" + session_data["livegroup_objectid"]
-    )
-
-    GwData_request_data = {"data": "fffe01010100000400003400d568", "type": "GwData"}
-    GwData_request = {
-        "data": GwData_request_data,
-        "from": session_data["userid"],
-        "time": unix_time(),
-        "to": session_data["bridge_name"],
-    }
-
-    GwData = {"Cmd": 2, "Request": GwData_request, "_method": "PUT"}
-    GwData.update(ID_param)
-
-    request = httpx.post(api_url_web_livegroup_instance, json=GwData)
-    json_data = json.dumps(request.json())
-    Gw_success = json.loads(json_data)
-    # TODO check success
-
-    return
-
-
-# used to get a response from pixie plus containing the last request made. In this data, the first two digits
-# represent a counter (in hex) that can be used in the next command. however, it works without it so dropped for now
-def livegroup_get_last_request(session_data, ID_param):
-
-    api_url_web_livegroup = "https://www.pixie.app/p0/pixieCloud/classes/LiveGroup"
-
-    livegroup_get_where = {"GroupID": session_data["homeid"]}
-    livegroup_get = {"_method": "GET", "where": livegroup_get_where}
-    livegroup_get.update(ID_param)
-
-    livegroup_get_2 = {"limit": 1, "_method": "GET", "where": livegroup_get_where}
-    livegroup_get_2.update(ID_param)
-
-    request = httpx.post(api_url_web_livegroup, json=livegroup_get)
-    json_data = json.dumps(request.json())
-    livegroup_data = json.loads(json_data)
-
-    livegroup_last_request = (
-        livegroup_data["results"][0]["Request"]["data"]["data"],
-        livegroup_data["results"][0]["Request"]["data"]["type"],
-    )
-
-    httpx.post(api_url_web_livegroup, json=livegroup_get_2)
-
-    return livegroup_last_request
-
-
 def unix_time():
-
     return int(datetime.datetime.timestamp(datetime.datetime.now()) * 1000)
 
 
 async def getdevices(config, session_data):
-    body = {
-        "where": {},
-        "skip": 0,
-        "limit": 20
-    }
+    body = {"where": {}, "skip": 0, "limit": 20}
 
     headers = {
         "x-parse-session-token": session_data["sessiontoken"],
         "x-parse-application-id": config["applicationid"],
-        "x-parse-client-key": config["clientkey"]
+        "x-parse-client-key": config["clientkey"],
     }
 
     req = httpx.get(api_url["home"], params=body, headers=headers)
@@ -212,9 +143,7 @@ async def getdevices(config, session_data):
     return parse_devices(res, config, session_data)
 
 
-
 def parse_devices(devices, config, session_data):
-
     numberofdevices = 0
     devices_list = list()
 
@@ -229,13 +158,12 @@ def parse_devices(devices, config, session_data):
         return _LOGGER.info(f"No onlineList in update, skipping")
 
     for i in range(numberofdevices):
-
         dev_id = devices["results"][0]["deviceList"][i]["id"]
         model_no = str(devices["results"][0]["deviceList"][i]["type"]).zfill(2) + str(
             devices["results"][0]["deviceList"][i]["stype"]
         ).zfill(2)
 
-        _LOGGER.debug('model_no %s', model_no)
+        _LOGGER.debug("model_no %s", model_no)
 
         if model_no == "0102":
             continue  # skips the gateway for now, doesn't add it to devices_list
@@ -297,9 +225,10 @@ def parse_devices(devices, config, session_data):
                 "state": state,
                 "type": devices["results"][0]["deviceList"][i]["type"],
                 "stype": devices["results"][0]["deviceList"][i]["stype"],
+                "email": config["email"],
                 "applicationid": config["applicationid"],
                 "installationid": config["installationid"],
-                "javascriptkey": config["clientkey"],
+                "clientkey": config["clientkey"],
                 "userid": session_data["userid"],
                 "homeid": session_data["homeid"],
                 "livegroup_objectid": session_data["livegroup_objectid"],
@@ -312,7 +241,6 @@ def parse_devices(devices, config, session_data):
         )
 
         if model_no in dev_has_usb:
-
             has_usb = True
             state = ""
 
@@ -325,9 +253,10 @@ def parse_devices(devices, config, session_data):
                     "state": state,
                     "type": devices["results"][0]["deviceList"][i]["type"],
                     "stype": devices["results"][0]["deviceList"][i]["stype"],
+                    "email": config["email"],
                     "applicationid": config["applicationid"],
                     "installationid": config["installationid"],
-                    "javascriptkey": config["clientkey"],
+                    "clientkey": config["clientkey"],
                     "userid": session_data["userid"],
                     "homeid": session_data["homeid"],
                     "livegroup_objectid": session_data["livegroup_objectid"],
@@ -357,9 +286,10 @@ def parse_devices(devices, config, session_data):
                     "state": state,
                     "type": devices["results"][0]["deviceList"][i]["type"],
                     "stype": devices["results"][0]["deviceList"][i]["stype"],
+                    "email": config["email"],
                     "applicationid": config["applicationid"],
                     "installationid": config["installationid"],
-                    "javascriptkey": config["clientkey"],
+                    "clientkey": config["clientkey"],
                     "userid": session_data["userid"],
                     "homeid": session_data["homeid"],
                     "livegroup_objectid": session_data["livegroup_objectid"],
@@ -380,11 +310,8 @@ async def change_light(data, state, other):
     model_no = str(data._type).zfill(2) + str(data._stype).zfill(2)
 
     if (state == "on") or (state == "00"):  # for on/off command
-
         if model_no in is_switch:  # for switch
-
             if data._has_usb:  # for USB
-
                 state_command = "00"
                 if state == "on":
                     state_command = "0c"
@@ -401,7 +328,6 @@ async def change_light(data, state, other):
                 )
 
             else:  # for main switch
-
                 if (
                     model_no in has_two_entities
                 ):  # for models with left and right sockets
@@ -443,7 +369,6 @@ async def change_light(data, state, other):
                     )
 
         else:  # for light
-
             state_command = "00"
             if state == "on":
                 state_command = 1
@@ -531,7 +456,7 @@ async def change_light(data, state, other):
         "time": unix_time(),
         "to": "ALL",
     }
-    bleData = { "Cmd": 2, "Request": bleData_request }
+    bleData = {"Cmd": 2, "Request": bleData_request}
     # bleData.update(ID_param)
 
     api_url_web_livegroup_instance = (
@@ -545,7 +470,7 @@ async def change_light(data, state, other):
     headers = {
         "x-parse-session-token": session_data["sessiontoken"],
         "x-parse-application-id": config["applicationid"],
-        "x-parse-client-key": config["clientkey"]
+        "x-parse-client-key": config["clientkey"],
     }
 
     request = httpx.put(api_url_web_livegroup_instance, json=bleData, headers=headers)
@@ -561,34 +486,25 @@ async def change_light(data, state, other):
 
 
 # connect to websocket to get updates
-async def pixie_websocket_connect(
-    applicationid,
-    installationid,
-    javascriptkey,
-    sessiontoken,
-    userid,
-    homeid,
-    livegroup_objectid,
-    coordinator,
-    hass,
-):
-
+async def pixie_websocket_connect(config, session_data, coordinator):
     # logger = logging.getLogger('websockets')
     # logger.setLevel(logging.DEBUG)
     # logger.addHandler(logging.StreamHandler())
 
     api_url_web_websocket = "wss://www.pixie.app/ws/p0/pixieCloud:443"
 
+    # connect to ws
     ws_ID_param = {
-        "applicationId": applicationid,
-        "javascriptKey": javascriptkey,
-        "sessionToken": sessiontoken,
+        "applicationId": config["applicationid"],
+        "sessionToken": session_data["sessiontoken"],
+        "clientKey": config["clientkey"],
     }
 
     ws_connect = {"op": "connect"}
     ws_connect.update(ws_ID_param)
 
-    ws_subscribe_livegroup_where = {"GroupID2": homeid}
+    # subscribe to livegroup
+    ws_subscribe_livegroup_where = {"objectId": session_data["livegroup_objectid"]}
     ws_subscribe_livegroup_query = {
         "className": "LiveGroup",
         "where": ws_subscribe_livegroup_where,
@@ -597,25 +513,30 @@ async def pixie_websocket_connect(
         "op": "subscribe",
         "query": ws_subscribe_livegroup_query,
         "requestId": 1,
-        "sessionToken": sessiontoken,
+        "sessionToken": session_data["sessiontoken"],
     }
 
-    ws_subscribe_home_where = {"objectId": homeid}
+    # subscribe to home
+    ws_subscribe_home_where = {"objectId": session_data["homeid"]}
     ws_subscribe_home_query = {"className": "Home", "where": ws_subscribe_home_where}
     ws_subscribe_home = {
         "op": "subscribe",
         "query": ws_subscribe_home_query,
         "requestId": 2,
-        "sessionToken": sessiontoken,
+        "sessionToken": session_data["sessiontoken"],
     }
 
-    ws_subscribe_HP_where = {"homeId": homeid, "userId": userid}
+    # subscribe to HP
+    ws_subscribe_HP_where = {
+        "homeId": session_data["homeid"],
+        "userId": session_data["userid"],
+    }
     ws_subscribe_HP_query = {"className": "HP", "where": ws_subscribe_HP_where}
     ws_subscribe_HP = {
         "op": "subscribe",
         "query": ws_subscribe_HP_query,
         "requestId": 3,
-        "sessionToken": sessiontoken,
+        "sessionToken": session_data["sessiontoken"],
     }
 
     async for websocket in websockets.connect(api_url_web_websocket):
@@ -665,12 +586,12 @@ async def pixie_websocket_connect(
                     print("Subscribed to HP")
 
             while True:
-
                 ws_update = await websocket.recv()
                 # print("\nnew update\n")
                 # print(ws_update)
                 try:
                     ws_update = json.loads(ws_update)
+                    _LOGGER.info(ws_update)
                 except:
                     _LOGGER.warning(
                         "websocket data couldn't be proceesed through json.loads"
@@ -683,15 +604,7 @@ async def pixie_websocket_connect(
                             try:
                                 # _LOGGER.info(ws_update)
                                 devices_list = parse_ws_data(
-                                    ws_update,
-                                    coordinator,
-                                    applicationid,
-                                    installationid,
-                                    javascriptkey,
-                                    sessiontoken,
-                                    userid,
-                                    homeid,
-                                    livegroup_objectid,
+                                    ws_update, coordinator, config, session_data
                                 )
                                 # _LOGGER.info(
                                 #    "devices_list after parsing by main ws update: %s",
@@ -738,18 +651,7 @@ async def pixie_websocket_connect(
 # parses websocket data as has different structure from data recivied via http to get current devices
 
 
-def parse_ws_data(
-    devices,
-    coordinator,
-    applicationid,
-    installationid,
-    javascriptkey,
-    sessiontoken,
-    userid,
-    homeid,
-    livegroup_objectid,
-):
-
+def parse_ws_data(devices, coordinator, config, session_data):
     numberofdevices = 0
     devices_list = list()
     state = ""
@@ -762,7 +664,6 @@ def parse_ws_data(
     # _LOGGER.info("number of devices is: %s", numberofdevices)
 
     for i in range(numberofdevices):
-
         dev_id = devices["object"]["deviceList"][i]["id"]
         # _LOGGER.info("dev_id is: %s", dev_id)
         model_no = str(devices["object"]["deviceList"][i]["type"]).zfill(2) + str(
@@ -832,13 +733,14 @@ def parse_ws_data(
                 "state": state,
                 "type": devices["object"]["deviceList"][i]["type"],
                 "stype": devices["object"]["deviceList"][i]["stype"],
-                "applicationid": applicationid,
-                "installationid": installationid,
-                "javascriptkey": javascriptkey,
-                "userid": userid,
-                "homeid": homeid,
-                "livegroup_objectid": livegroup_objectid,
-                "sessiontoken": sessiontoken,
+                "email": config["email"],
+                "applicationid": config["applicationid"],
+                "installationid": config["installationid"],
+                "clientkey": config["clientkey"],
+                "userid": session_data["userid"],
+                "homeid": session_data["homeid"],
+                "livegroup_objectid": session_data["livegroup_objectid"],
+                "sessiontoken": session_data["sessiontoken"],
                 "master_device_name": master_device_name,
                 "side": side,
                 "has_usb": has_usb,
@@ -847,15 +749,11 @@ def parse_ws_data(
         )
         # _LOGGER.info("the interim devices list is: %s", devices_list)
         if model_no in dev_has_usb:
-
             has_usb = True
 
-            for (
-                device
-            ) in (
+            for device in (
                 coordinator.data
             ):  # usb state is not provided in the update so looking for existing state
-
                 if (dev_id == device["id"]) and (device["has_usb"]):
                     state = device["state"]
                     # _LOGGER.info("state from coordinator data is: %s", state)
@@ -869,13 +767,14 @@ def parse_ws_data(
                     "state": state,
                     "type": devices["object"]["deviceList"][i]["type"],
                     "stype": devices["object"]["deviceList"][i]["stype"],
-                    "applicationid": applicationid,
-                    "installationid": installationid,
-                    "javascriptkey": javascriptkey,
-                    "userid": userid,
-                    "homeid": homeid,
-                    "livegroup_objectid": livegroup_objectid,
-                    "sessiontoken": sessiontoken,
+                    "email": config["email"],
+                    "applicationid": config["applicationid"],
+                    "installationid": config["installationid"],
+                    "clientkey": config["clientkey"],
+                    "userid": session_data["userid"],
+                    "homeid": session_data["homeid"],
+                    "livegroup_objectid": session_data["livegroup_objectid"],
+                    "sessiontoken": session_data["sessiontoken"],
                     "side": side,
                     "has_usb": has_usb,
                     "has_usb_update": True,
@@ -901,13 +800,14 @@ def parse_ws_data(
                     "state": state,
                     "type": devices["object"]["deviceList"][i]["type"],
                     "stype": devices["object"]["deviceList"][i]["stype"],
-                    "applicationid": applicationid,
-                    "installationid": installationid,
-                    "javascriptkey": javascriptkey,
-                    "userid": userid,
-                    "homeid": homeid,
-                    "livegroup_objectid": livegroup_objectid,
-                    "sessiontoken": sessiontoken,
+                    "email": config["email"],
+                    "applicationid": config["applicationid"],
+                    "installationid": config["installationid"],
+                    "clientkey": config["clientkey"],
+                    "userid": session_data["userid"],
+                    "homeid": session_data["homeid"],
+                    "livegroup_objectid": session_data["livegroup_objectid"],
+                    "sessiontoken": session_data["sessiontoken"],
                     "side": side,
                     "has_usb": has_usb,
                     "has_usb_update": "",
@@ -920,7 +820,6 @@ def parse_ws_data(
 
 
 def parse_single_ws_update(coordinator, ws_update):
-
     devices_list = coordinator.data
     # _LOGGER.info("devices list from coordinator: %s", devices_list)
 
@@ -937,7 +836,6 @@ def parse_single_ws_update(coordinator, ws_update):
     # _LOGGER.info("mac_id: %s, new_state_data: %s", mac_id, new_state_data)
 
     for device in devices_list:
-
         # _LOGGER.info(device["mac"][15:])
         if (mac_id == hex(device["id"])[2:].zfill(2)) and (device["has_usb"]):
             # _LOGGER.info(device["has_usb"])
@@ -955,15 +853,6 @@ def parse_single_ws_update(coordinator, ws_update):
 
 
 def initiate_cover(data):
-
-    ID_param = {
-        "_ApplicationId": data._applicationid,
-        "_ClientVersion": "js1.9.2",
-        "_InstallationId": data._installationid,
-        "_JavaScriptKey": data._javascriptkey,
-        "_SessionToken": data._sessiontoken,
-    }
-
     light_command_number = "00"
     mac_id = hex(data._id)[2:].zfill(2)
     cover_command_list = []
@@ -987,13 +876,12 @@ def initiate_cover(data):
     )
 
     for x in cover_command_list:
-
         if x == 10:
             light_command_data = (
                 str(light_command_number)
                 + "00000304"
                 + str(mac_id)
-                + "00fa6b69000100027700"
+                + "00fa6b69000101027700"
             )
         else:
             light_command_data = (
@@ -1002,7 +890,7 @@ def initiate_cover(data):
                 + str(mac_id)
                 + "00fa6b690"
                 + str(x)
-                + "0100017700"
+                + "0101017700"
             )
 
         bleData_request_data = {
@@ -1012,16 +900,28 @@ def initiate_cover(data):
         }
         bleData_request = {
             "data": bleData_request_data,
-            "from": data._userid,
+            "from": data._email,
             "time": unix_time(),
             "to": "ALL",
         }
-        bleData = {"Cmd": 2, "Request": bleData_request, "_method": "PUT"}
-        bleData.update(ID_param)
+        bleData = {"Cmd": 2, "Request": bleData_request}
+        # bleData.update(ID_param)
 
-        request = httpx.post(api_url_web_livegroup_instance, json=bleData)
+        headers = {
+            "x-parse-session-token": data._sessiontoken,
+            "x-parse-application-id": data._applicationid,
+            "x-parse-client-key": data._clientkey,
+        }
+        _LOGGER.debug(f"cover request_headers: {headers}")
+        _LOGGER.debug(f"cover request_data: {bleData}")
 
-        cover_response.append(request)
+        request = httpx.put(
+            api_url_web_livegroup_instance, json=bleData, headers=headers
+        )
+        result = request.json()
+        #        request = httpx.post(api_url_web_livegroup_instance, json=bleData)
+
+        cover_response.append(result)
 
     return cover_response
 
