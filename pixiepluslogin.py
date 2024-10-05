@@ -31,6 +31,7 @@ api_url = {
 async def pixie_login(config):
     # pixie plus hub is controlled from the cloud by accessing the foloowing url's
     # data required for login
+    _LOGGER.info("config", config)
     login_data = {
         "applicationid": config["applicationid"],
         "installationid": config["installationid"],
@@ -40,9 +41,9 @@ async def pixie_login(config):
     }
 
     # session data has session speicifc data: sessionToken, userId, homeId
-    session_data = login(login_data)
+    session_data = await login(login_data)
 
-    live_group_data = livegroup_get_objectID(config, session_data)
+    live_group_data = await livegroup_get_objectID(config, session_data)
     session_data.update(live_group_data)
 
     devices_list = await getdevices(config, session_data)
@@ -74,7 +75,7 @@ def check_user(data):
         return False
 
 
-def login(data):
+async def login(data):
     _LOGGER.info(f"logging in")
     body = {"username": data["email"], "password": data["password"]}
     headers = {
@@ -83,8 +84,10 @@ def login(data):
         "x-parse-client-key": data["clientkey"],
         "x-parse-revocable-session": "1",
     }
-    req = httpx.post(api_url["login"], json=body, headers=headers)
-    res = req.json()
+    async with httpx.AsyncClient() as client:
+      req = await client.post(api_url["login"], json=body, headers=headers)
+      #req = httpx.post(api_url["login"], json=body, headers=headers)
+      res = req.json()
 
     _LOGGER.info("result", res)
 
@@ -98,7 +101,7 @@ def login(data):
     return data
 
 
-def livegroup_get_objectID(config, session_data):
+async def livegroup_get_objectID(config, session_data):
     body = {
         "where": json.dumps(
             {"GroupID": {"$regex": session_data["homeid"] + "$", "$options": "i"}}

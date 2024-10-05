@@ -81,14 +81,7 @@ async def async_setup_entry(
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][config_entry.entry_id] = coordinator
 
-    for platform in PLATFORMS:
-        if config_entry.options.get(platform, True):
-            coordinator.platforms.append(platform)
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(config_entry, platform)
-            )
-
-    # await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     # calling websocket connection to get push updates
     asyncio.create_task(
