@@ -80,7 +80,7 @@ async def async_setup_entry(
                 if (str(ent["type"]).zfill(2) + str(ent["stype"]).zfill(2)) in is_cover
             )
         else:
-            _LOGGER.error(
+            _LOGGER.info(
                 "Unable to add cover entities because they are not defined in configuration.yaml - please see documentation"
             )
 

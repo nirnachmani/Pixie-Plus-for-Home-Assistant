@@ -73,7 +73,7 @@ async def async_setup_entry(
 
     config = config_entry.data
 
-    (devices_list, session_data) = await pixiepluslogin.pixie_login(config)
+    (devices_list, session_data) = await pixiepluslogin.pixie_login(hass, config)
 
     coordinator = MyCoordinator(hass, config, session_data, devices_list)
     await coordinator.async_config_entry_first_refresh()
@@ -84,9 +84,16 @@ async def async_setup_entry(
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     # calling websocket connection to get push updates
-    asyncio.create_task(
-        pixiepluslogin.pixie_websocket_connect(config, session_data, coordinator)
+    
+    hass.async_create_background_task(
+      pixiepluslogin.pixie_websocket_connect(hass, config, session_data, coordinator),
+      "Pixie Plus WebSocket Connection"
     )
+
+    #asyncio.create_task(
+    #    pixiepluslogin.pixie_websocket_connect(config, session_data, coordinator)
+    #)
+
 
     return True
 
@@ -117,6 +124,7 @@ class MyCoordinator(DataUpdateCoordinator):
             # Polling interval. Will only be polled if there are subscribers.
             # update_interval=timedelta(seconds=30),
         )
+        self.hass = hass
         self.config = config
         self.session_data = session_data
         self.devices_list = devices_list
@@ -124,7 +132,7 @@ class MyCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         self.devices_list = await pixiepluslogin.getdevices(
-            self.config, self.session_data
+            self.hass, self.config, self.session_data
         )
         return self.devices_list
 

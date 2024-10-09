@@ -6,6 +6,10 @@ import time
 
 import httpx
 import websockets
+import ssl
+
+from homeassistant.core import HomeAssistant 
+from homeassistant.helpers.httpx_client import get_async_client 
 
 from .const import (
     dev_has_usb,
@@ -28,10 +32,10 @@ api_url = {
 }
 
 
-async def pixie_login(config):
+async def pixie_login(hass, config):
     # pixie plus hub is controlled from the cloud by accessing the foloowing url's
     # data required for login
-    _LOGGER.info("config", config)
+    _LOGGER.debug("config", config)
     login_data = {
         "applicationid": config["applicationid"],
         "installationid": config["installationid"],
@@ -41,12 +45,12 @@ async def pixie_login(config):
     }
 
     # session data has session speicifc data: sessionToken, userId, homeId
-    session_data = await login(login_data)
+    session_data = await login(hass, login_data)
 
-    live_group_data = await livegroup_get_objectID(config, session_data)
+    live_group_data = await livegroup_get_objectID(hass, config, session_data)
     session_data.update(live_group_data)
 
-    devices_list = await getdevices(config, session_data)
+    devices_list = await getdevices(hass, config, session_data)
 
     return (devices_list, session_data)
 
@@ -66,7 +70,7 @@ def check_user(data):
     req = httpx.post(api_url["userquery"], json=body, headers=headers)
     res = req.json()
 
-    _LOGGER.info("result", res)
+    _LOGGER.debug("result", res)
 
     if "result" in res:
         return res["result"] == 1
@@ -75,8 +79,8 @@ def check_user(data):
         return False
 
 
-async def login(data):
-    _LOGGER.info(f"logging in")
+async def login(hass, data):
+    #_LOGGER.info(f"logging in")
     body = {"username": data["email"], "password": data["password"]}
     headers = {
         "x-parse-application-id": data["applicationid"],
@@ -84,12 +88,18 @@ async def login(data):
         "x-parse-client-key": data["clientkey"],
         "x-parse-revocable-session": "1",
     }
-    async with httpx.AsyncClient() as client:
-      req = await client.post(api_url["login"], json=body, headers=headers)
-      #req = httpx.post(api_url["login"], json=body, headers=headers)
-      res = req.json()
+    
+    #req = httpx.post(api_url["login"], json=body, headers=headers)
 
-    _LOGGER.info("result", res)
+    client = get_async_client(hass, False) 
+    req = await client.post(api_url["login"], json=body, headers=headers)
+    res = req.json()
+
+    #async with httpx.AsyncClient() as client:
+    #  req = await client.post(api_url["login"], json=body, headers=headers)
+    #  res = req.json()
+
+    _LOGGER.debug("result of login: %s", res)
 
     data = {
         "userid": res["objectId"],
@@ -101,7 +111,7 @@ async def login(data):
     return data
 
 
-async def livegroup_get_objectID(config, session_data):
+async def livegroup_get_objectID(hass, config, session_data):
     body = {
         "where": json.dumps(
             {"GroupID": {"$regex": session_data["homeid"] + "$", "$options": "i"}}
@@ -115,8 +125,14 @@ async def livegroup_get_objectID(config, session_data):
         "x-parse-client-key": config["clientkey"],
     }
 
-    req = httpx.get(api_url["livegroup"], params=body, headers=headers)
+    client = get_async_client(hass, False) 
+    req = await client.get(api_url["livegroup"], params=body, headers=headers)
     res = req.json()
+    
+    #req = httpx.get(api_url["livegroup"], params=body, headers=headers)
+    #res = req.json()
+    
+    _LOGGER.debug("result of livegroup: %s", res)
 
     data = {
         "livegroup_objectid": res["results"][0]["objectId"],
@@ -131,7 +147,7 @@ def unix_time():
     return int(datetime.datetime.timestamp(datetime.datetime.now()) * 1000)
 
 
-async def getdevices(config, session_data):
+async def getdevices(hass, config, session_data):
     body = {"where": {}, "skip": 0, "limit": 20}
 
     headers = {
@@ -140,8 +156,15 @@ async def getdevices(config, session_data):
         "x-parse-client-key": config["clientkey"],
     }
 
-    req = httpx.get(api_url["home"], params=body, headers=headers)
+    client = get_async_client(hass, False) 
+    req = await client.get(api_url["home"], params=body, headers=headers)
     res = req.json()
+    
+    _LOGGER.debug("result of getdevices: %s", res)
+
+
+    #req = httpx.get(api_url["home"], params=body, headers=headers)
+    #res = req.json()
 
     return parse_devices(res, config, session_data)
 
@@ -487,9 +510,12 @@ async def change_light(data, state, other):
 
     return
 
+async def create_ssl_context(hass: HomeAssistant) -> ssl.SSLContext:
+    """Create an SSL context in a non-blocking way using Home Assistant's async executor."""
+    return await hass.async_add_executor_job(ssl.create_default_context)
 
 # connect to websocket to get updates
-async def pixie_websocket_connect(config, session_data, coordinator):
+async def pixie_websocket_connect(hass: HomeAssistant, config, session_data, coordinator):
     # logger = logging.getLogger('websockets')
     # logger.setLevel(logging.DEBUG)
     # logger.addHandler(logging.StreamHandler())
@@ -541,8 +567,10 @@ async def pixie_websocket_connect(config, session_data, coordinator):
         "requestId": 3,
         "sessionToken": session_data["sessiontoken"],
     }
+    
+    ssl_context = await create_ssl_context(hass)
 
-    async for websocket in websockets.connect(api_url_web_websocket):
+    async for websocket in websockets.connect(api_url_web_websocket, ssl=ssl_context):
         try:
             await websocket.send(json.dumps(ws_connect))
             response = await websocket.recv()
@@ -594,7 +622,7 @@ async def pixie_websocket_connect(config, session_data, coordinator):
                 # print(ws_update)
                 try:
                     ws_update = json.loads(ws_update)
-                    _LOGGER.info(ws_update)
+                    _LOGGER.debug(ws_update)
                 except:
                     _LOGGER.warning(
                         "websocket data couldn't be proceesed through json.loads"
@@ -619,7 +647,7 @@ async def pixie_websocket_connect(config, session_data, coordinator):
                                     coordinator.async_set_updated_data(devices_list)
                             except:
                                 _LOGGER.error("unable to parse large websocket input")
-                                _LOGGER.info(ws_update)
+                                _LOGGER.debug(ws_update)
                         if ws_update["requestId"] == 1:
                             try:
                                 # _LOGGER.info(ws_update)
@@ -638,7 +666,7 @@ async def pixie_websocket_connect(config, session_data, coordinator):
                                 _LOGGER.debug(no_data)
                             except:
                                 _LOGGER.info("unable to parse small websocket input")
-                                _LOGGER.info(ws_update)
+                                _LOGGER.debug(ws_update)
         except websockets.ConnectionClosed:
             _LOGGER.warning("websocket disconnected, reconnecting")
             continue
