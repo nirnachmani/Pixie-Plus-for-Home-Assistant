@@ -42,7 +42,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         raise InvalidAuth
 
     if (
-        await hass.async_add_executor_job(pixiepluslogin.login, data)
+        await hass.async_add_executor_job(pixiepluslogin.login, hass, data)
         == "LoginError"
     ):
         raise InvalidAuth
