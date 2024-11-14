@@ -18,6 +18,7 @@ sent me a box with different hardware which I was able to implement in the integ
 - Smart Socket Outlet - SP023/BTAM
 - Dual Relay Control - PC206DR/R/BTAM
 - Blind & Signal Control - PC206BS/R/BTAM
+- rippleSHIELD DIMMER - SDD400SFI
 
 For compatible devices, it supports dimming, colours and effects. The integration doesn't support built in Pixie Plus groups, scenes, schedules or timers 
 because I assume that you would use Home Assistant for those functions anyway. It only works if you have a Pixie Plus Hub and doesn't support Bluetooth
