@@ -170,23 +170,27 @@ async def getdevices(hass, config, session_data):
 
 
 def parse_devices(devices, config, session_data):
-    numberofdevices = 0
-    devices_list = list()
-
-    if "results" in devices:
-        numberofdevices = len(devices["results"][0]["deviceList"])
-    elif "error" in devices:
+    if "error" in devices:
         if devices["code"] == 209:
             return _LOGGER.error("Login error, please reload the integration")
         else:
             return _LOGGER.error(f"Error getting devices: {devices}")
-    if not devices["results"][0]["onlineList"]:
+
+    numberofdevices = 0
+    devices_list = list()
+    applic_res = next(filter(lambda x: x['objectId'] == session_data["homeid"], devices["results"]))
+
+    if not applic_res["onlineList"]:
         return _LOGGER.info(f"No onlineList in update, skipping")
 
+
+    if "results" in devices:
+        numberofdevices = len(applic_res["deviceList"])
+
     for i in range(numberofdevices):
-        dev_id = devices["results"][0]["deviceList"][i]["id"]
-        model_no = str(devices["results"][0]["deviceList"][i]["type"]).zfill(2) + str(
-            devices["results"][0]["deviceList"][i]["stype"]
+        dev_id = applic_res["deviceList"][i]["id"]
+        model_no = str(applic_res["deviceList"][i]["type"]).zfill(2) + str(
+            applic_res["deviceList"][i]["stype"]
         ).zfill(2)
 
         _LOGGER.debug("model_no %s", model_no)
@@ -196,32 +200,32 @@ def parse_devices(devices, config, session_data):
 
         if model_no not in has_two_entities and model_no not in is_cover:
             try:
-                if devices["results"][0]["onlineList"][str(dev_id)]["br"] > 0:
+                if applic_res["onlineList"][str(dev_id)]["br"] > 0:
                     state = True
-                elif devices["results"][0]["onlineList"][str(dev_id)]["br"] == 0:
+                elif applic_res["onlineList"][str(dev_id)]["br"] == 0:
                     state = ""
             except:
                 _LOGGER.info(
                     "unable to get status for %s because it is not online",
-                    devices["results"][0]["deviceList"][i]["name"],
+                    applic_res["deviceList"][i]["name"],
                 )
                 continue
 
         if model_no in has_dimming:
             br_cur = (
-                int(devices["results"][0]["onlineList"][str(dev_id)]["br"]) / 100
+                int(applic_res["onlineList"][str(dev_id)]["br"]) / 100
             ) * 255
         else:
             br_cur = ""
 
         if model_no in has_two_entities:
             # left first
-            device_name = devices["results"][0]["deviceList"][i]["left_name"]
-            master_device_name = devices["results"][0]["deviceList"][i]["name"]
+            device_name = applic_res["deviceList"][i]["left_name"]
+            master_device_name = applic_res["deviceList"][i]["name"]
             side = "left"
             try:
-                if (devices["results"][0]["onlineList"][str(dev_id)]["r"] == 1) or (
-                    devices["results"][0]["onlineList"][str(dev_id)]["r"] == 3
+                if (applic_res["onlineList"][str(dev_id)]["r"] == 1) or (
+                    applic_res["onlineList"][str(dev_id)]["r"] == 3
                 ):
                     state = True
                 else:
@@ -229,11 +233,11 @@ def parse_devices(devices, config, session_data):
             except:
                 _LOGGER.info(
                     "unable to get status for %s because it is not online",
-                    devices["results"][0]["deviceList"][i]["name"],
+                    applic_res["deviceList"][i]["name"],
                 )
                 continue
         else:
-            device_name = devices["results"][0]["deviceList"][i]["name"]
+            device_name = applic_res["deviceList"][i]["name"]
             master_device_name = ""
             side = ""
 
@@ -245,12 +249,12 @@ def parse_devices(devices, config, session_data):
         devices_list.append(
             {
                 "name": device_name,
-                "id": devices["results"][0]["deviceList"][i]["id"],
+                "id": applic_res["deviceList"][i]["id"],
                 "br_cur": br_cur,
-                "mac": devices["results"][0]["deviceList"][i]["mac"],
+                "mac": applic_res["deviceList"][i]["mac"],
                 "state": state,
-                "type": devices["results"][0]["deviceList"][i]["type"],
-                "stype": devices["results"][0]["deviceList"][i]["stype"],
+                "type": applic_res["deviceList"][i]["type"],
+                "stype": applic_res["deviceList"][i]["stype"],
                 "email": config["email"],
                 "applicationid": config["applicationid"],
                 "installationid": config["installationid"],
@@ -273,12 +277,12 @@ def parse_devices(devices, config, session_data):
             devices_list.append(
                 {
                     "name": device_name,
-                    "id": devices["results"][0]["deviceList"][i]["id"],
+                    "id": applic_res["deviceList"][i]["id"],
                     "br_cur": br_cur,
-                    "mac": devices["results"][0]["deviceList"][i]["mac"],
+                    "mac": applic_res["deviceList"][i]["mac"],
                     "state": state,
-                    "type": devices["results"][0]["deviceList"][i]["type"],
-                    "stype": devices["results"][0]["deviceList"][i]["stype"],
+                    "type": applic_res["deviceList"][i]["type"],
+                    "stype": applic_res["deviceList"][i]["stype"],
                     "email": config["email"],
                     "applicationid": config["applicationid"],
                     "installationid": config["installationid"],
@@ -294,10 +298,10 @@ def parse_devices(devices, config, session_data):
                 }
             )
         elif model_no in has_two_entities:
-            device_name = devices["results"][0]["deviceList"][i]["right_name"]
+            device_name = applic_res["deviceList"][i]["right_name"]
             side = "right"
-            if (devices["results"][0]["onlineList"][str(dev_id)]["r"] == 2) or (
-                devices["results"][0]["onlineList"][str(dev_id)]["r"] == 3
+            if (applic_res["onlineList"][str(dev_id)]["r"] == 2) or (
+                applic_res["onlineList"][str(dev_id)]["r"] == 3
             ):
                 state = True
             else:
@@ -306,12 +310,12 @@ def parse_devices(devices, config, session_data):
             devices_list.append(
                 {
                     "name": device_name,
-                    "id": devices["results"][0]["deviceList"][i]["id"],
+                    "id": applic_res["deviceList"][i]["id"],
                     "br_cur": br_cur,
-                    "mac": devices["results"][0]["deviceList"][i]["mac"],
+                    "mac": applic_res["deviceList"][i]["mac"],
                     "state": state,
-                    "type": devices["results"][0]["deviceList"][i]["type"],
-                    "stype": devices["results"][0]["deviceList"][i]["stype"],
+                    "type": applic_res["deviceList"][i]["type"],
+                    "stype": applic_res["deviceList"][i]["stype"],
                     "email": config["email"],
                     "applicationid": config["applicationid"],
                     "installationid": config["installationid"],
