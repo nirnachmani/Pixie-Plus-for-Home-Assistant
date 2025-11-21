@@ -48,10 +48,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # Return info that you want to store in the config entry.
     return {
         "email": data["email"],
-        "password": data["password"],
-        "applicationid": APPLICATION_ID,
-        "installationid": str(uuid.uuid4()),
-        "clientkey": CLIENT_KEY,
+        "password": data["password"]
     }
 
 
@@ -71,6 +68,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         errors = {}
+        user_input.update({
+                "applicationid": APPLICATION_ID,
+                "installationid": str(uuid.uuid4()),
+                "clientkey": CLIENT_KEY
+            })
 
         try:
             await validate_input(self.hass, user_input)

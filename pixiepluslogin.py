@@ -103,19 +103,18 @@ async def login(hass, data):
 
     data = {
         "userid": res["objectId"],
-        "homeid": res["curHome"]["objectId"],
-        "homeid": res["curHome"]["objectId"] if res["curHome"] != None else gethomeid(hass, data, res), 
+        "homeid": res["curHome"]["objectId"] if "curHome" in res else await gethomeid(hass, data, res["sessionToken"]), 
         "sessiontoken": res["sessionToken"],
         "raw": res,
     }
 
     return data
 
-async def gethomeid(hass, config, session_data):   
+async def gethomeid(hass, config, session_token):   
     body = {"where": {}, "skip": 0, "limit": 20}
                                  
     headers = {                        
-        "x-parse-session-token": session_data["sessiontoken"],
+        "x-parse-session-token": session_token,
         "x-parse-application-id": config["applicationid"],
         "x-parse-client-key": config["clientkey"],                        
     }                                           
