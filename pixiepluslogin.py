@@ -104,12 +104,27 @@ async def login(hass, data):
     data = {
         "userid": res["objectId"],
         "homeid": res["curHome"]["objectId"],
+        "homeid": res["curHome"]["objectId"] if res["curHome"] != None else gethomeid(hass, data, res), 
         "sessiontoken": res["sessionToken"],
         "raw": res,
     }
 
     return data
 
+async def gethomeid(hass, config, session_data):   
+    body = {"where": {}, "skip": 0, "limit": 20}
+                                 
+    headers = {                        
+        "x-parse-session-token": session_data["sessiontoken"],
+        "x-parse-application-id": config["applicationid"],
+        "x-parse-client-key": config["clientkey"],                        
+    }                                           
+                                
+    client = get_async_client(hass, False)                          
+    req = await client.get(api_url["home"], params=body, headers=headers)
+    res = req.json()                                    
+                                                                              
+    return res["results"][0]["objectId"] 
 
 async def livegroup_get_objectID(hass, config, session_data):
     body = {

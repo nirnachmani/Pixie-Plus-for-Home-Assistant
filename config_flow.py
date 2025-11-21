@@ -8,24 +8,22 @@ from typing import Any
 
 import voluptuous as vol
 
+import uuid
+
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import DOMAIN
+from .const import DOMAIN, APPLICATION_ID, CLIENT_KEY
 
 
 _LOGGER = logging.getLogger(__name__)
 
-
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required("email"): str,
-        vol.Required("password"): str,
-        vol.Required("applicationid"): str,
-        vol.Required("installationid"): str,
-        vol.Required("clientkey"): str,
+        vol.Required("password"): str
     }
 )
 
@@ -51,9 +49,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return {
         "email": data["email"],
         "password": data["password"],
-        "applicationid": data["applicationid"],
-        "installationid": data["installationid"],
-        "clientkey": data["clientkey"],
+        "applicationid": APPLICATION_ID,
+        "installationid": str(uuid.uuid4()),
+        "clientkey": CLIENT_KEY,
     }
 
 
