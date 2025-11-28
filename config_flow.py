@@ -48,7 +48,10 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # Return info that you want to store in the config entry.
     return {
         "email": data["email"],
-        "password": data["password"]
+        "password": data["password"],
+        "applicationid": data["applicationid"],
+        "installationid": data["installationid"],
+        "clientkey": data["clientkey"]
     }
 
 
@@ -56,6 +59,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for pixie_plus."""
 
     VERSION = 1
+
+    credentials = {
+        "applicationid": APPLICATION_ID,
+        "installationid": str(uuid.uuid4()),
+        "clientkey": CLIENT_KEY
+    }
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -68,14 +77,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         errors = {}
-        user_input.update({
-                "applicationid": APPLICATION_ID,
-                "installationid": str(uuid.uuid4()),
-                "clientkey": CLIENT_KEY
-            })
+        config_entry = {}
 
         try:
-            await validate_input(self.hass, user_input)
+            user_input.update(self.credentials)
+            config_entry = await validate_input(self.hass, user_input)
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except InvalidAuth:
@@ -84,7 +90,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
         else:
-            return self.async_create_entry(title="Pixie Plus", data=user_input)
+            return self.async_create_entry(title="Pixie Plus", data=config_entry)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
