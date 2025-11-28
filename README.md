@@ -6,8 +6,6 @@ This is a custom integration for Home Assistant that connects with PIXIE Plus sm
 
 PIXIE offers a suite of Bluetooth Mesh smart home products for controlling various aspects of your home - including lights, blinds, garage doors, gates, fans, and appliances. This integration supports a variety of these devices with capabilities including dimming, colors, effects, and more.
 
-> **⚠️ Important Note:** Installation requires technical knowledge and is not straightforward. This integration has been tested on limited systems and may require modifications to work with your setup. While not officially supported, I may be able to provide limited assistance.
-
 ## Supported Devices
 
 The integration currently supports:
