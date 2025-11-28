@@ -2,6 +2,9 @@
 
 DOMAIN = "pixie_plus"
 
+APPLICATION_ID = "6426f04c206c108275ede71b9fd09ac8"
+CLIENT_KEY = "35779bd411c751ff87577cd762118dad"
+
 hardware_list = {
     "0102": "Gateway G3 - SGW3BTAM",
     "2213": "Smart Switch G3 - SWL600BTAM",
