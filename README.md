@@ -1,6 +1,6 @@
 # PIXIE Plus for Home Assistant
 
-## !!! This repository will be archived soon. Please use the new local integration [Pixie Plus Local](https://github.com/nirnachmani/Pixie_Plus_Local) !!!
+## !!! Please use the new local integration [Pixie Plus Local](https://github.com/nirnachmani/Pixie_Plus_Local) !!!
 
 ## Overview
 
